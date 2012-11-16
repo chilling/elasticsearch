@@ -24,7 +24,8 @@ import org.elasticsearch.cluster.routing.operation.hash.HashFunction;
 //TODO: documentation: what is djb hashfunction
 
 /**
- * This class implements the DJB hash function for hashing strings
+ * This class implements the efficient hash function
+ * developed by <i>Daniel J. Bernstein</i>.
  */
 public class DjbHashFunction implements HashFunction {
 

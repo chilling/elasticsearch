@@ -34,7 +34,10 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Instances of this class keep messages and informations about an allocation
+ * Instances of this class keeps explanations of decisions that have been made by allocation.
+ * An {@link AllocationExplanation} consists of a set of per node explanations.
+ * Since {@link NodeExplanation}s are related to shards an {@link AllocationExplanation} maps
+ * a shards id to a set of {@link NodeExplanation}s.  
  */
 public class AllocationExplanation implements Streamable {
 

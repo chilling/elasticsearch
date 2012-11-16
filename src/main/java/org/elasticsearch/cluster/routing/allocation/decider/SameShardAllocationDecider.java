@@ -29,7 +29,9 @@ import org.elasticsearch.common.settings.Settings;
 import java.util.List;
 
 /**
- * An allocation strategy that does not allow for the same shard instance to be allocated on the same node.
+ * An allocation strategy that does not allow for the same shard instance to be
+ * allocated on the same node. The cluster setting can be modified in real-time
+ * by updating the {@value #SAME_HOST_SETTING} value of cluster setting API.
  */
 public class SameShardAllocationDecider extends AllocationDecider {
 

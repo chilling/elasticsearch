@@ -20,8 +20,10 @@
 package org.elasticsearch.cluster.routing;
 
 /**
- * Like {@link ImmutableShardRouting} this class keeps metadata of the current shard routing. But unlike
+ * Like {@link ImmutableShardRouting} this class keeps metadata of the current shard. But unlike
  * {@link ImmutableShardRouting} the information kept in this class can be modified.
+ * These modifications include changing the primary state, relocating and assigning the shard
+ * represented by this class
  */
 public class MutableShardRouting extends ImmutableShardRouting {
 

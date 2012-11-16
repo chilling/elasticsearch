@@ -19,10 +19,17 @@
 
 package org.elasticsearch.cluster.routing;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Sets;
-import com.google.common.collect.UnmodifiableIterator;
+import static com.google.common.collect.Lists.newArrayList;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
+
 import org.elasticsearch.ElasticSearchIllegalStateException;
 import org.elasticsearch.cluster.metadata.IndexMetaData;
 import org.elasticsearch.cluster.metadata.MetaData;
@@ -30,15 +37,17 @@ import org.elasticsearch.common.io.stream.StreamInput;
 import org.elasticsearch.common.io.stream.StreamOutput;
 import org.elasticsearch.index.shard.ShardId;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.*;
-import java.util.concurrent.atomic.AtomicInteger;
-
-import static com.google.common.collect.Lists.newArrayList;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Sets;
+import com.google.common.collect.UnmodifiableIterator;
 
 /**
- * This class implements the routing table of indices
+ * The {@link IndexRoutingTable} represents an index. Since an index is split into
+ * several shards, these can be iterated by the methods defined by the {@link Iterable}
+ * interface.
+ * Also this class offers methods to add or remove replicas to/from the cluster.      
+ *  
  */
 public class IndexRoutingTable implements Iterable<IndexShardRoutingTable> {
 

@@ -41,8 +41,11 @@ import static org.elasticsearch.cluster.routing.ShardRoutingState.INITIALIZING;
 import static org.elasticsearch.cluster.routing.ShardRoutingState.STARTED;
 
 /**
- * This class is an implementation of a ShardsAllocator. Rebalancing and
- * assignment of unassigned shards is done by greedy algorithms.
+ * This class is an implementation of a {@link ShardsAllocator}. Rebalancing and
+ * assignment of unassigned shards is done by greedy algorithms. So for
+ * re-balancing the {@link EvenShardsCountAllocator} takes shards from the most busy
+ * nodes and moves them to the least busy node until the number of shards per node is
+ * almost equal for all nodes.
  */
 public class EvenShardsCountAllocator extends AbstractComponent implements ShardsAllocator {
 

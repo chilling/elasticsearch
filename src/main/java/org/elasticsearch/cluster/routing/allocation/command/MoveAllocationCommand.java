@@ -38,8 +38,8 @@ import org.elasticsearch.index.shard.ShardId;
 import java.io.IOException;
 
 /**
- * A command that moves a shard from a specific node to another node. Note, the shards
- * need to be in "started" state in order to be moved if from is specified.
+ * A command that moves a shard from a specific node to another node.<br />
+ * <b>Note:</b> The shard needs to be <tt>STARTED</tt> in order to be moved.
  */
 public class MoveAllocationCommand implements AllocationCommand {
 

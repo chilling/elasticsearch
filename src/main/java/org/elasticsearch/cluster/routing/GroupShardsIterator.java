@@ -24,8 +24,9 @@ import java.util.Iterator;
 
 /**
  * This class implements a compilation of {@link ShardIterator}s. Each {@link ShardIterator}
- * represents a group.
- */
+ * iterated by this {@link Iterable} represents a group of shards.
+ *  
+*/
 public class GroupShardsIterator implements Iterable<ShardIterator> {
 
     private final Collection<ShardIterator> iterators;

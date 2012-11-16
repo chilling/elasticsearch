@@ -24,7 +24,7 @@ import org.elasticsearch.index.shard.ShardId;
 import java.util.List;
 
 /**
- * The {@link PlainShardIterator} is a {@link PlainShardsIterator} which iterates all
+ * The {@link PlainShardIterator} is a {@link ShardsIterator} which iterates all
  * shards with a fixed {@link ShardId}
  */
 public class PlainShardIterator extends PlainShardsIterator implements ShardIterator {

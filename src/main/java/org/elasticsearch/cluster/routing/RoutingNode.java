@@ -30,7 +30,9 @@ import java.util.List;
 import static com.google.common.collect.Lists.newArrayList;
 
 /**
- * A {@link RoutingNode} is the base of nodes related to routing 
+ * A {@link RoutingNode} is the base of nodes related to routing. It contains
+ * a list of all shard provided by represented node. It also offers methods
+ * to add or remove shards to/from this node.
  */
 public class RoutingNode implements Iterable<MutableShardRouting> {
 

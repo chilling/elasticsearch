@@ -36,8 +36,13 @@ import java.util.concurrent.atomic.AtomicInteger;
 import static com.google.common.collect.Lists.newArrayList;
 
 /**
- * This class implements a routing table of shards. It keeps informations bout shards
- * and the nodes containing these shards
+ * Instances of this class representing shards of indices. Each shard has a primary
+ * instance and several replicas. An {@link IndexShardRoutingTable} keeps these
+ * instances of a shard.<br />
+ * The replicas of the shard represented by an {@link IndexShardRoutingTable} instance
+ * consists of sublist. Namely {@value #activeShards}, {@value #replicas}, {@value #assignedShards}
+ * and the {@value #primary} shard. This class allows to handle all the lists independently.    
+ *  
  */
 public class IndexShardRoutingTable implements Iterable<ShardRouting> {
 

@@ -45,7 +45,10 @@ import static org.elasticsearch.cluster.routing.ShardRoutingState.INITIALIZING;
 import static org.elasticsearch.cluster.routing.ShardRoutingState.RELOCATING;
 
 /**
- * This service manages the node allocation of a cluster.
+ * This service manages the node allocation of a cluster. For this reason the
+ * {@link AllocationService} keeps {@link AllocationDeciders} to choose nodes
+ * for shard allocation. This class also manages new nodes joining the cluster
+ * and rerouting of shards.
  */
 public class AllocationService extends AbstractComponent {
 

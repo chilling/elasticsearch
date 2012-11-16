@@ -30,12 +30,13 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.Serializable;
 
-/** this class describes information about shards like id, state, version, etc.
- *  These informations can't be modified within this class 
+/** This class describes information about shards like id, state, version, etc.
+ *  Due immutability these informations can't be modified within this class. Hence
+ *  this class represents a current state of a shard.  
  */
 public class ImmutableShardRouting implements Streamable, Serializable, ShardRouting {
 
-    protected String index;
+	protected String index;
 
     protected int shardId;
 

@@ -38,7 +38,10 @@ import java.util.Map;
 /**
  * This {@link AllocationDecider} controls shard rerouting by
  * awareness attributes which define whether a node can remain
- * on a node or has to be moved to another one.
+ * on a node or has to be moved to another one.<br />
+ * The awareness attributes can be changed in real-time via the
+ * cluster settings API by the <tt>cluster.routing.allocation.awareness.attributes</tt>
+ * and the <tt>cluster.routing.allocation.awareness.force</tt> settings.
  */
 public class AwarenessAllocationDecider extends AllocationDecider {
 

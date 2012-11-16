@@ -33,6 +33,7 @@ import java.util.List;
 
 /**
  * TODO: Class-Documentation
+ * {@value Cluster}
  */
 public class ThrottlingAllocationDecider extends AllocationDecider {
 

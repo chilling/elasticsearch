@@ -29,7 +29,8 @@ import org.elasticsearch.common.settings.Settings;
 
 /**
  * The {@link AllocationModule} manages several
- * modules related to the allocation process
+ * modules related to the allocation process. To do so
+ * it manages a {@link ShardsAllocatorModule} and an {@link AllocationDecidersModule}.
  */
 public class AllocationModule extends AbstractModule implements SpawnModules {
 
