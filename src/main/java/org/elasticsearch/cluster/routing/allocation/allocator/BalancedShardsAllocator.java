@@ -24,6 +24,7 @@ import static org.elasticsearch.cluster.routing.ShardRoutingState.INITIALIZING;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -391,41 +392,55 @@ class Balancer {
         return changed;
     }
     
+    class DistributionOrder implements Comparator<MutableShardRouting> {
+        
+        @Override
+        public int compare(MutableShardRouting a, MutableShardRouting b) {
+            if(a.assignedToNode()!=b.assignedToNode()) {
+                return a.assignedToNode()?-1:1;
+            } else if(a.primary()!=b.primary()) {
+                return a.primary()?-1:1;
+            } else {
+                final int index = a.index().compareTo(b.index());
+                if(index!=0) {
+                    return index;
+                } else {
+                    final int shard = a.shardId().id()-b.shardId().id();
+                    if(shard != 0) {
+                        return shard;
+                    } else {
+                        final int id = a.id() - b.id();
+                        if(id!=0) {
+                            return id;
+                        } else {
+                            String aNode = a.assignedToNode()?(a.relocating()?a.relocatingNodeId():a.currentNodeId()):null;
+                            String bNode = b.assignedToNode()?(b.relocating()?b.relocatingNodeId():b.currentNodeId()):null;
+                            if(aNode==null && bNode!=null) {
+                                return 1;
+                            } else if(bNode==null && aNode!=null){
+                                return -1;
+                            } else if(aNode!=null && bNode!=null) {
+                                return aNode.compareTo(bNode);
+                            } else {
+                                return a.hashCode()-b.hashCode();
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    
     private boolean distributeReplicas(Collection<MutableShardRouting> replicas) {
-        Collection<MutableShardRouting> others = new ArrayList<MutableShardRouting>();
+        ArrayList<MutableShardRouting> others = new ArrayList<MutableShardRouting>();
         
         boolean failed = false;
         boolean changed = false;
         List<MutableShardRouting> added = new ArrayList<MutableShardRouting>();
-        
-        /* we need to distribute primary shards
-         * before other shards 
-         * */
-        for (MutableShardRouting replica : replicas) {
-            if(replica.primary()) {
-                NodeInfo node = allocateReplica(replica);
-                if(node==null) {
-                    logger.info("\t\tFAILED TO ASSIGN PRIMARY " + toString(replica));
-                    failed = true;
-                } else {
-                    logger.info("\t\tAssigned primary " + toString(replica) + " to " + node.id);
-                    if(replica.unassigned()) {
-                        allocation.routingNodes().node(node.id).add(replica);
-                        changed = true;
-                    } else if(replica.initializing()) {
-//                        replica.moveToStarted();
-                    } else if(replica.relocating()) {
 
-                    }
-                    added.add(replica);
-                    String replicanode = replica.relocating()?replica.relocatingNodeId():replica.currentNodeId();
-                    changed |= !node.id.equals(replicanode);
-                }
-            } else {
-                others.add(replica);
-                
-            }
-        }
+        others.addAll(replicas);
+        Collections.sort(others, new DistributionOrder());
+        
         
         for(MutableShardRouting replica : others) {
             NodeInfo node = allocateReplica(replica);
@@ -562,11 +577,10 @@ class Balancer {
     private boolean initateReplicas(RoutingNodes routing) {
         Collection<MutableShardRouting> replicas = new ArrayList<MutableShardRouting>();
         
+        logger.info("\t-------- DISTRIBUTING REPLICAS --------");
+
         for(IndexRoutingTable index : allocation.routingTable().indicesRouting().values()) {
             indices.add(index.index());
-            logger.info("\t-------- DISTRIBUTING REPLICAS --------");
-
-            
             for(IndexShardRoutingTable shard : index.getShards().values()) {
                 replicas.addAll(routing.shardsRoutingFor(index.index(), shard.shardId().id()));
             }
