@@ -55,9 +55,8 @@ public class ChildrenQuery extends Query implements SearchContext.Rewrite {
     private final String childType;
     private final Filter parentFilter;
     private final ScoreType scoreType;
-    private final Query originalChildQuery;
+    private final Query childQuery;
 
-    private Query rewrittenChildQuery;
     private TObjectFloatHashMap<HashedBytesArray> uidToScore;
     private TObjectIntHashMap<HashedBytesArray> uidToCount;
 
@@ -66,7 +65,7 @@ public class ChildrenQuery extends Query implements SearchContext.Rewrite {
         this.parentType = parentType;
         this.childType = childType;
         this.parentFilter = parentFilter;
-        this.originalChildQuery = childQuery;
+        this.childQuery = childQuery;
         this.scoreType = scoreType;
     }
 
@@ -76,8 +75,7 @@ public class ChildrenQuery extends Query implements SearchContext.Rewrite {
         this.childType = unProcessedQuery.childType;
         this.parentFilter = unProcessedQuery.parentFilter;
         this.scoreType = unProcessedQuery.scoreType;
-        this.originalChildQuery = unProcessedQuery.originalChildQuery;
-        this.rewrittenChildQuery = rewrittenChildQuery;
+        this.childQuery = rewrittenChildQuery;
 
         this.uidToScore = unProcessedQuery.uidToScore;
         this.uidToCount = unProcessedQuery.uidToCount;
@@ -86,33 +84,27 @@ public class ChildrenQuery extends Query implements SearchContext.Rewrite {
     @Override
     public String toString(String field) {
         StringBuilder sb = new StringBuilder();
-        sb.append("ChildrenQuery[").append(childType).append("/").append(parentType).append("](").append(originalChildQuery
+        sb.append("ChildrenQuery[").append(childType).append("/").append(parentType).append("](").append(childQuery
                 .toString(field)).append(')').append(ToStringUtils.boost(getBoost()));
         return sb.toString();
     }
 
     @Override
     public Query rewrite(IndexReader reader) throws IOException {
-        Query rewritten;
-        if (rewrittenChildQuery == null) {
-            rewritten = originalChildQuery.rewrite(reader);
-        } else {
-            rewritten = rewrittenChildQuery;
-        }
-        if (rewritten == rewrittenChildQuery) {
+        Query rewrittenChildQuery = childQuery.rewrite(reader);
+        if (rewrittenChildQuery == childQuery) {
             return this;
         }
 
-        // See TopChildrenQuery#rewrite
         int index = searchContext.rewrites().indexOf(this);
-        ChildrenQuery rewrite = new ChildrenQuery(this, rewritten);
+        ChildrenQuery rewrite = new ChildrenQuery(this, rewrittenChildQuery);
         searchContext.rewrites().set(index, rewrite);
         return rewrite;
     }
 
     @Override
     public void extractTerms(Set<Term> terms) {
-        rewrittenChildQuery.extractTerms(terms);
+        childQuery.extractTerms(terms);
     }
 
     @Override
@@ -128,12 +120,6 @@ public class ChildrenQuery extends Query implements SearchContext.Rewrite {
                 break;
             default:
                 collector = new ChildUidCollector(scoreType, searchContext, parentType, uidToScore);
-        }
-        Query childQuery;
-        if (rewrittenChildQuery == null) {
-            childQuery = rewrittenChildQuery = searchContext.searcher().rewrite(originalChildQuery);
-        } else {
-            childQuery = rewrittenChildQuery;
         }
         searchContext.searcher().search(childQuery, collector);
     }
@@ -156,7 +142,7 @@ public class ChildrenQuery extends Query implements SearchContext.Rewrite {
             throw new ElasticSearchIllegalStateException("has_child query hasn't executed properly");
         }
 
-        return new ParentWeight(rewrittenChildQuery.createWeight(searcher));
+        return new ParentWeight(childQuery.createWeight(searcher));
     }
 
     class ParentWeight extends Weight {
