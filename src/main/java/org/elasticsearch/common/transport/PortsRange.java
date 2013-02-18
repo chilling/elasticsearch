@@ -19,9 +19,10 @@
 
 package org.elasticsearch.common.transport;
 
-import gnu.trove.list.array.TIntArrayList;
-
 import java.util.StringTokenizer;
+
+import org.elasticsearch.util.ESCollections;
+import org.elasticsearch.util.ESCollections.IntList;
 
 /**
  *
@@ -35,11 +36,11 @@ public class PortsRange {
     }
 
     public int[] ports() throws NumberFormatException {
-        final TIntArrayList ports = new TIntArrayList();
+        final IntList ports = ESCollections.newIntList();
         iterate(new PortCallback() {
             @Override
             public boolean onPortNumber(int portNumber) {
-                ports.add(portNumber);
+                ports.addX(portNumber);
                 return false;
             }
         });

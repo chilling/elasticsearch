@@ -19,7 +19,6 @@
 
 package org.elasticsearch.index.fielddata.plain;
 
-import gnu.trove.list.array.TIntArrayList;
 import org.apache.lucene.index.AtomicReader;
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.Terms;
@@ -39,6 +38,8 @@ import org.elasticsearch.index.fielddata.ordinals.Ordinals.Docs;
 import org.elasticsearch.index.fielddata.ordinals.OrdinalsBuilder;
 import org.elasticsearch.index.mapper.FieldMapper;
 import org.elasticsearch.index.settings.IndexSettings;
+import org.elasticsearch.util.ESCollections;
+import org.elasticsearch.util.ESCollections.IntList;
 
 /**
  */
@@ -89,15 +90,15 @@ public class IntArrayIndexFieldData extends AbstractIndexFieldData<IntArrayAtomi
             return IntArrayAtomicFieldData.EMPTY;
         }
         // TODO: how can we guess the number of terms? numerics end up creating more terms per value...
-        final TIntArrayList values = new TIntArrayList();
+        final IntList values = ESCollections.newIntList();
 
-        values.add(0); // first "t" indicates null value
+        values.addX(0); // first "t" indicates null value
         OrdinalsBuilder builder = new OrdinalsBuilder(terms, reader.maxDoc());
         try {
             BytesRefIterator iter = builder.buildFromTerms(builder.wrapNumeric32Bit(terms.iterator(null)), reader.getLiveDocs());
             BytesRef term;
             while ((term = iter.next()) != null) {
-                values.add(NumericUtils.prefixCodedToInt(term));
+                values.addX(NumericUtils.prefixCodedToInt(term));
             }
             Ordinals build = builder.build(fieldDataType.getSettings());
             if (!build.isMultiValued()) {

@@ -19,11 +19,12 @@
 
 package org.elasticsearch.action.get;
 
-import gnu.trove.list.array.TIntArrayList;
 import org.elasticsearch.action.support.single.shard.SingleShardOperationRequest;
 import org.elasticsearch.common.Nullable;
 import org.elasticsearch.common.io.stream.StreamInput;
 import org.elasticsearch.common.io.stream.StreamOutput;
+import org.elasticsearch.util.ESCollections;
+import org.elasticsearch.util.ESCollections.IntList;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -36,7 +37,7 @@ public class MultiGetShardRequest extends SingleShardOperationRequest<MultiGetSh
     Boolean realtime;
     boolean refresh;
 
-    TIntArrayList locations;
+    IntList locations;
     List<String> types;
     List<String> ids;
     List<String[]> fields;
@@ -48,7 +49,7 @@ public class MultiGetShardRequest extends SingleShardOperationRequest<MultiGetSh
     MultiGetShardRequest(String index, int shardId) {
         super(index);
         this.shardId = shardId;
-        locations = new TIntArrayList();
+        locations = ESCollections.newIntList();
         types = new ArrayList<String>();
         ids = new ArrayList<String>();
         fields = new ArrayList<String[]>();
@@ -91,7 +92,7 @@ public class MultiGetShardRequest extends SingleShardOperationRequest<MultiGetSh
     }
 
     public void add(int location, @Nullable String type, String id, String[] fields) {
-        this.locations.add(location);
+        this.locations.addX(location);
         this.types.add(type);
         this.ids.add(id);
         this.fields.add(fields);
@@ -101,12 +102,12 @@ public class MultiGetShardRequest extends SingleShardOperationRequest<MultiGetSh
     public void readFrom(StreamInput in) throws IOException {
         super.readFrom(in);
         int size = in.readVInt();
-        locations = new TIntArrayList(size);
+        locations = ESCollections.newIntList(size);
         types = new ArrayList<String>(size);
         ids = new ArrayList<String>(size);
         fields = new ArrayList<String[]>(size);
         for (int i = 0; i < size; i++) {
-            locations.add(in.readVInt());
+            locations.addX(in.readVInt());
             if (in.readBoolean()) {
                 types.add(in.readString());
             } else {

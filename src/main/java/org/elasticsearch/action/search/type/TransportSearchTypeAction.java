@@ -32,7 +32,6 @@ import org.elasticsearch.cluster.routing.ShardIterator;
 import org.elasticsearch.cluster.routing.ShardRouting;
 import org.elasticsearch.common.Nullable;
 import org.elasticsearch.common.settings.Settings;
-import org.elasticsearch.common.trove.ExtTIntArrayList;
 import org.elasticsearch.common.util.concurrent.ConcurrentCollections;
 import org.elasticsearch.search.SearchPhaseResult;
 import org.elasticsearch.search.SearchShardTarget;
@@ -43,6 +42,7 @@ import org.elasticsearch.search.controller.ShardDoc;
 import org.elasticsearch.search.internal.ShardSearchRequest;
 import org.elasticsearch.search.query.QuerySearchResultProvider;
 import org.elasticsearch.threadpool.ThreadPool;
+import org.elasticsearch.util.ESCollections.IntList;
 
 import java.util.Arrays;
 import java.util.Map;
@@ -329,7 +329,7 @@ public abstract class TransportSearchTypeAction extends TransportAction<SearchRe
          * Releases shard targets that are not used in the docsIdsToLoad.
          */
         protected void releaseIrrelevantSearchContexts(Map<SearchShardTarget, QuerySearchResultProvider> queryResults,
-                                                       Map<SearchShardTarget, ExtTIntArrayList> docIdsToLoad) {
+                                                       Map<SearchShardTarget, IntList> docIdsToLoad) {
             if (docIdsToLoad == null) {
                 return;
             }

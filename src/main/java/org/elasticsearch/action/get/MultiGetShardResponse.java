@@ -19,10 +19,11 @@
 
 package org.elasticsearch.action.get;
 
-import gnu.trove.list.array.TIntArrayList;
 import org.elasticsearch.action.ActionResponse;
 import org.elasticsearch.common.io.stream.StreamInput;
 import org.elasticsearch.common.io.stream.StreamOutput;
+import org.elasticsearch.util.ESCollections;
+import org.elasticsearch.util.ESCollections.IntList;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -30,24 +31,24 @@ import java.util.List;
 
 public class MultiGetShardResponse extends ActionResponse {
 
-    TIntArrayList locations;
+    IntList locations;
     List<GetResponse> responses;
     List<MultiGetResponse.Failure> failures;
 
     MultiGetShardResponse() {
-        locations = new TIntArrayList();
+        locations = ESCollections.newIntList();
         responses = new ArrayList<GetResponse>();
         failures = new ArrayList<MultiGetResponse.Failure>();
     }
 
     public void add(int location, GetResponse response) {
-        locations.add(location);
+        locations.addX(location);
         responses.add(response);
         failures.add(null);
     }
 
     public void add(int location, MultiGetResponse.Failure failure) {
-        locations.add(location);
+        locations.addX(location);
         responses.add(null);
         failures.add(failure);
     }
@@ -56,11 +57,11 @@ public class MultiGetShardResponse extends ActionResponse {
     public void readFrom(StreamInput in) throws IOException {
         super.readFrom(in);
         int size = in.readVInt();
-        locations = new TIntArrayList(size);
+        locations = ESCollections.newIntList(size);
         responses = new ArrayList<GetResponse>(size);
         failures = new ArrayList<MultiGetResponse.Failure>(size);
         for (int i = 0; i < size; i++) {
-            locations.add(in.readVInt());
+            locations.addX(in.readVInt());
             if (in.readBoolean()) {
                 GetResponse response = new GetResponse();
                 response.readFrom(in);

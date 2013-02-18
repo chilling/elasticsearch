@@ -26,7 +26,6 @@ import org.elasticsearch.cluster.node.DiscoveryNode;
 import org.elasticsearch.cluster.routing.ShardRouting;
 import org.elasticsearch.common.inject.Inject;
 import org.elasticsearch.common.settings.Settings;
-import org.elasticsearch.common.trove.ExtTIntArrayList;
 import org.elasticsearch.search.SearchShardTarget;
 import org.elasticsearch.search.action.SearchServiceListener;
 import org.elasticsearch.search.action.SearchServiceTransportAction;
@@ -41,6 +40,7 @@ import org.elasticsearch.search.query.QuerySearchRequest;
 import org.elasticsearch.search.query.QuerySearchResult;
 import org.elasticsearch.search.query.QuerySearchResultProvider;
 import org.elasticsearch.threadpool.ThreadPool;
+import org.elasticsearch.util.ESCollections.IntList;
 
 import java.util.Collection;
 import java.util.Map;
@@ -70,7 +70,7 @@ public class TransportSearchDfsQueryThenFetchAction extends TransportSearchTypeA
 
         private final Map<SearchShardTarget, FetchSearchResult> fetchResults = searchCache.obtainFetchResults();
 
-        private volatile Map<SearchShardTarget, ExtTIntArrayList> docIdsToLoad;
+        private volatile Map<SearchShardTarget, IntList> docIdsToLoad;
 
         private AsyncAction(SearchRequest request, ActionListener<SearchResponse> listener) {
             super(request, listener);
@@ -179,7 +179,7 @@ public class TransportSearchDfsQueryThenFetchAction extends TransportSearchTypeA
 
         void innerExecuteFetchPhase() {
             sortedShardList = searchPhaseController.sortDocs(queryResults.values());
-            final Map<SearchShardTarget, ExtTIntArrayList> docIdsToLoad = searchPhaseController.docIdsToLoad(sortedShardList);
+            final Map<SearchShardTarget, IntList> docIdsToLoad = searchPhaseController.docIdsToLoad(sortedShardList);
             this.docIdsToLoad = docIdsToLoad;
 
             if (docIdsToLoad.isEmpty()) {
@@ -189,7 +189,7 @@ public class TransportSearchDfsQueryThenFetchAction extends TransportSearchTypeA
 
             final AtomicInteger counter = new AtomicInteger(docIdsToLoad.size());
             int localOperations = 0;
-            for (final Map.Entry<SearchShardTarget, ExtTIntArrayList> entry : docIdsToLoad.entrySet()) {
+            for (final Map.Entry<SearchShardTarget, IntList> entry : docIdsToLoad.entrySet()) {
                 DiscoveryNode node = nodes.get(entry.getKey().nodeId());
                 if (node.id().equals(nodes.localNodeId())) {
                     localOperations++;
@@ -204,7 +204,7 @@ public class TransportSearchDfsQueryThenFetchAction extends TransportSearchTypeA
                     threadPool.executor(ThreadPool.Names.SEARCH).execute(new Runnable() {
                         @Override
                         public void run() {
-                            for (final Map.Entry<SearchShardTarget, ExtTIntArrayList> entry : docIdsToLoad.entrySet()) {
+                            for (final Map.Entry<SearchShardTarget, IntList> entry : docIdsToLoad.entrySet()) {
                                 DiscoveryNode node = nodes.get(entry.getKey().nodeId());
                                 if (node.id().equals(nodes.localNodeId())) {
                                     FetchSearchRequest fetchSearchRequest = new FetchSearchRequest(request, queryResults.get(entry.getKey()).id(), entry.getValue());
@@ -214,8 +214,8 @@ public class TransportSearchDfsQueryThenFetchAction extends TransportSearchTypeA
                         }
                     });
                 } else {
-                    boolean localAsync = request.operationThreading() == SearchOperationThreading.THREAD_PER_SHARD;
-                    for (final Map.Entry<SearchShardTarget, ExtTIntArrayList> entry : docIdsToLoad.entrySet()) {
+                    boolean localAsync = request.getOperationThreading() == SearchOperationThreading.THREAD_PER_SHARD;
+                    for (final Map.Entry<SearchShardTarget, IntList> entry : docIdsToLoad.entrySet()) {
                         final DiscoveryNode node = nodes.get(entry.getKey().nodeId());
                         if (node.id().equals(nodes.localNodeId())) {
                             final FetchSearchRequest fetchSearchRequest = new FetchSearchRequest(request, queryResults.get(entry.getKey()).id(), entry.getValue());

@@ -21,8 +21,6 @@ package org.elasticsearch.gateway.local;
 
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
-import gnu.trove.iterator.TObjectLongIterator;
-import gnu.trove.map.hash.TObjectLongHashMap;
 import org.elasticsearch.ExceptionsHelper;
 import org.elasticsearch.cluster.metadata.IndexMetaData;
 import org.elasticsearch.cluster.node.DiscoveryNode;
@@ -47,6 +45,9 @@ import org.elasticsearch.index.shard.ShardId;
 import org.elasticsearch.index.store.StoreFileMetaData;
 import org.elasticsearch.indices.store.TransportNodesListShardStoreMetaData;
 import org.elasticsearch.transport.ConnectTransportException;
+import org.elasticsearch.util.ESCollections;
+import org.elasticsearch.util.ESCollections.ObjectLongIterator;
+import org.elasticsearch.util.ESCollections.ObjectLongMap;
 
 import java.util.Iterator;
 import java.util.Map;
@@ -68,7 +69,7 @@ public class LocalGatewayAllocator extends AbstractComponent implements GatewayA
 
     private final ConcurrentMap<ShardId, Map<DiscoveryNode, TransportNodesListShardStoreMetaData.StoreFilesMetaData>> cachedStores = ConcurrentCollections.newConcurrentMap();
 
-    private final ConcurrentMap<ShardId, TObjectLongHashMap<DiscoveryNode>> cachedShardsState = ConcurrentCollections.newConcurrentMap();
+    private final ConcurrentMap<ShardId, ObjectLongMap<DiscoveryNode>> cachedShardsState = ConcurrentCollections.newConcurrentMap();
 
     private final TimeValue listTimeout;
 
@@ -122,12 +123,12 @@ public class LocalGatewayAllocator extends AbstractComponent implements GatewayA
                 continue;
             }
 
-            TObjectLongHashMap<DiscoveryNode> nodesState = buildShardStates(nodes, shard);
+            ObjectLongMap<DiscoveryNode> nodesState = buildShardStates(nodes, shard);
 
             int numberOfAllocationsFound = 0;
             long highestVersion = -1;
             Set<DiscoveryNode> nodesWithHighestVersion = Sets.newHashSet();
-            for (TObjectLongIterator<DiscoveryNode> it = nodesState.iterator(); it.hasNext(); ) {
+            for (ObjectLongIterator<DiscoveryNode> it = nodesState.longIterator(); it.hasNext(); ) {
                 it.advance();
                 DiscoveryNode node = it.key();
                 long version = it.value();
@@ -353,16 +354,16 @@ public class LocalGatewayAllocator extends AbstractComponent implements GatewayA
         return changed;
     }
 
-    private TObjectLongHashMap<DiscoveryNode> buildShardStates(DiscoveryNodes nodes, MutableShardRouting shard) {
-        TObjectLongHashMap<DiscoveryNode> shardStates = cachedShardsState.get(shard.shardId());
+    private ObjectLongMap<DiscoveryNode> buildShardStates(DiscoveryNodes nodes, MutableShardRouting shard) {
+        ObjectLongMap<DiscoveryNode> shardStates = cachedShardsState.get(shard.shardId());
         Set<String> nodeIds;
         if (shardStates == null) {
-            shardStates = new TObjectLongHashMap<DiscoveryNode>();
+            shardStates = ESCollections.newObjectLongMap();
             cachedShardsState.put(shard.shardId(), shardStates);
             nodeIds = nodes.dataNodes().keySet();
         } else {
             // clean nodes that have failed
-            for (TObjectLongIterator<DiscoveryNode> it = shardStates.iterator(); it.hasNext(); ) {
+            for (ObjectLongIterator<DiscoveryNode> it = shardStates.longIterator(); it.hasNext(); ) {
                 it.advance();
                 if (!nodes.nodeExists(it.key().id())) {
                     it.remove();
@@ -371,7 +372,7 @@ public class LocalGatewayAllocator extends AbstractComponent implements GatewayA
             nodeIds = Sets.newHashSet();
             // we have stored cached from before, see if the nodes changed, if they have, go fetch again
             for (DiscoveryNode node : nodes.dataNodes().values()) {
-                if (!shardStates.containsKey(node)) {
+                if (!shardStates.containsKeyX(node)) {
                     nodeIds.add(node.id());
                 }
             }

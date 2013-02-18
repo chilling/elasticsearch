@@ -21,8 +21,6 @@ package org.elasticsearch.search.builder;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
-import gnu.trove.iterator.TObjectFloatIterator;
-import gnu.trove.map.hash.TObjectFloatHashMap;
 import org.elasticsearch.ElasticSearchGenerationException;
 import org.elasticsearch.client.Requests;
 import org.elasticsearch.common.Nullable;
@@ -43,6 +41,9 @@ import org.elasticsearch.search.sort.SortBuilder;
 import org.elasticsearch.search.sort.SortBuilders;
 import org.elasticsearch.search.sort.SortOrder;
 import org.elasticsearch.search.suggest.SuggestBuilder;
+import org.elasticsearch.util.ESCollections;
+import org.elasticsearch.util.ESCollections.ObjectFloatIterator;
+import org.elasticsearch.util.ESCollections.ObjectFloatMap;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -109,7 +110,7 @@ public class SearchSourceBuilder implements ToXContent {
 
     private RescoreBuilder rescoreBuilder;
 
-    private TObjectFloatHashMap<String> indexBoost = null;
+    private ObjectFloatMap<String> indexBoost = null;
 
     private String[] stats;
 
@@ -541,7 +542,7 @@ public class SearchSourceBuilder implements ToXContent {
      */
     public SearchSourceBuilder indexBoost(String index, float indexBoost) {
         if (this.indexBoost == null) {
-            this.indexBoost = new TObjectFloatHashMap<String>();
+            this.indexBoost = ESCollections.newObjectFloatMap();
         }
         this.indexBoost.put(index, indexBoost);
         return this;
@@ -701,7 +702,7 @@ public class SearchSourceBuilder implements ToXContent {
 
         if (indexBoost != null) {
             builder.startObject("indices_boost");
-            for (TObjectFloatIterator<String> it = indexBoost.iterator(); it.hasNext(); ) {
+            for (ObjectFloatIterator<String> it = indexBoost.floatIterator(); it.hasNext(); ) {
                 it.advance();
                 builder.field(it.key(), it.value());
             }

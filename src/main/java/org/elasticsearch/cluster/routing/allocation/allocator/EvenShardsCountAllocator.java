@@ -19,7 +19,6 @@
 
 package org.elasticsearch.cluster.routing.allocation.allocator;
 
-import gnu.trove.map.hash.TObjectIntHashMap;
 import org.elasticsearch.cluster.routing.MutableShardRouting;
 import org.elasticsearch.cluster.routing.RoutingNode;
 import org.elasticsearch.cluster.routing.RoutingNodes;
@@ -32,6 +31,8 @@ import org.elasticsearch.cluster.routing.allocation.decider.Decision;
 import org.elasticsearch.common.component.AbstractComponent;
 import org.elasticsearch.common.inject.Inject;
 import org.elasticsearch.common.settings.Settings;
+import org.elasticsearch.util.ESCollections;
+import org.elasticsearch.util.ESCollections.ObjectIntMap;
 
 import java.util.Arrays;
 import java.util.Comparator;
@@ -225,7 +226,7 @@ public class EvenShardsCountAllocator extends AbstractComponent implements Shard
 
     private RoutingNode[] sortedNodesLeastToHigh(RoutingAllocation allocation) {
         // create count per node id, taking into account relocations
-        final TObjectIntHashMap<String> nodeCounts = new TObjectIntHashMap<String>();
+        final ObjectIntMap<String> nodeCounts = ESCollections.newObjectIntMap();
         for (RoutingNode node : allocation.routingNodes()) {
             for (int i = 0; i < node.shards().size(); i++) {
                 ShardRouting shardRouting = node.shards().get(i);
@@ -237,7 +238,7 @@ public class EvenShardsCountAllocator extends AbstractComponent implements Shard
         Arrays.sort(nodes, new Comparator<RoutingNode>() {
             @Override
             public int compare(RoutingNode o1, RoutingNode o2) {
-                return nodeCounts.get(o1.nodeId()) - nodeCounts.get(o2.nodeId());
+                return nodeCounts.getX(o1.nodeId()) - nodeCounts.getX(o2.nodeId());
             }
         });
         return nodes;

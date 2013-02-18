@@ -19,9 +19,11 @@
 
 package org.elasticsearch.common.io.stream;
 
-import gnu.trove.impl.Constants;
-import gnu.trove.map.hash.TObjectIntHashMap;
+
 import org.elasticsearch.common.text.Text;
+import org.elasticsearch.util.ESCollections;
+import org.elasticsearch.util.ESCollections.Constants;
+import org.elasticsearch.util.ESCollections.ObjectIntMap;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -36,10 +38,10 @@ public class HandlesStreamOutput extends AdapterStreamOutput {
     // a threshold above which strings will use identity check
     private final int identityThreshold;
 
-    private final TObjectIntHashMap<String> handles = new TObjectIntHashMap<String>(Constants.DEFAULT_CAPACITY, Constants.DEFAULT_LOAD_FACTOR, -1);
+    private final ObjectIntMap<String> handles = ESCollections.newObjectIntMap(Constants.DEFAULT_CAPACITY, Constants.DEFAULT_LOAD_FACTOR, -1);
     private final HandleTable identityHandles = new HandleTable(10, (float) 3.00);
 
-    private final TObjectIntHashMap<Text> handlesText = new TObjectIntHashMap<Text>(Constants.DEFAULT_CAPACITY, Constants.DEFAULT_LOAD_FACTOR, -1);
+    private final ObjectIntMap<Text> handlesText = ESCollections.newObjectIntMap(Constants.DEFAULT_CAPACITY, Constants.DEFAULT_LOAD_FACTOR, -1);
 
     public HandlesStreamOutput(StreamOutput out) {
         this(out, DEFAULT_IDENTITY_THRESHOLD);
@@ -53,7 +55,7 @@ public class HandlesStreamOutput extends AdapterStreamOutput {
     @Override
     public void writeString(String s) throws IOException {
         if (s.length() < identityThreshold) {
-            int handle = handles.get(s);
+            int handle = handles.getX(s);
             if (handle == -1) {
                 handle = handles.size();
                 handles.put(s, handle);
@@ -87,7 +89,7 @@ public class HandlesStreamOutput extends AdapterStreamOutput {
             length = text.string().length();
         }
         if (length < identityThreshold) {
-            int handle = handlesText.get(text);
+            int handle = handlesText.getX(text);
             if (handle == -1) {
                 handle = handlesText.size();
                 handlesText.put(text, handle);

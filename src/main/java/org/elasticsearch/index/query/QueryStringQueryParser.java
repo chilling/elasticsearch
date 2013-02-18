@@ -20,8 +20,6 @@
 package org.elasticsearch.index.query;
 
 import com.google.common.collect.Lists;
-import gnu.trove.impl.Constants;
-import gnu.trove.map.hash.TObjectFloatHashMap;
 
 import org.apache.lucene.queryparser.classic.MapperQueryParser;
 import org.apache.lucene.queryparser.classic.ParseException;
@@ -36,6 +34,9 @@ import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.xcontent.XContentParser;
 import org.elasticsearch.index.analysis.NamedAnalyzer;
 import org.elasticsearch.index.query.support.QueryParsers;
+import org.elasticsearch.util.ESCollections;
+import org.elasticsearch.util.ESCollections.Constants;
+import org.elasticsearch.util.ESCollections.ObjectFloatMap;
 
 import java.io.IOException;
 
@@ -105,7 +106,8 @@ public class QueryStringQueryParser implements QueryParser {
                                 qpSettings.fields().add(field);
                                 if (fBoost != -1) {
                                     if (qpSettings.boosts() == null) {
-                                        qpSettings.boosts(new TObjectFloatHashMap<String>(Constants.DEFAULT_CAPACITY, Constants.DEFAULT_LOAD_FACTOR, 1.0f));
+                                        ObjectFloatMap<String> map = ESCollections.newObjectFloatMap(Constants.DEFAULT_CAPACITY, Constants.DEFAULT_LOAD_FACTOR, 1.0f);
+                                        qpSettings.boosts(map);
                                     }
                                     qpSettings.boosts().put(field, fBoost);
                                 }
@@ -114,7 +116,8 @@ public class QueryStringQueryParser implements QueryParser {
                             qpSettings.fields().add(fField);
                             if (fBoost != -1) {
                                 if (qpSettings.boosts() == null) {
-                                    qpSettings.boosts(new TObjectFloatHashMap<String>(Constants.DEFAULT_CAPACITY, Constants.DEFAULT_LOAD_FACTOR, 1.0f));
+                                    ObjectFloatMap<String> map = ESCollections.newObjectFloatMap(Constants.DEFAULT_CAPACITY, Constants.DEFAULT_LOAD_FACTOR, 1.0f);
+                                    qpSettings.boosts(map);
                                 }
                                 qpSettings.boosts().put(fField, fBoost);
                             }

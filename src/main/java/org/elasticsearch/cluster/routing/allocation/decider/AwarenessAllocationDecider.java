@@ -20,7 +20,6 @@
 package org.elasticsearch.cluster.routing.allocation.decider;
 
 import com.google.common.collect.Maps;
-import gnu.trove.map.hash.TObjectIntHashMap;
 import org.elasticsearch.cluster.metadata.IndexMetaData;
 import org.elasticsearch.cluster.metadata.MetaData;
 import org.elasticsearch.cluster.routing.MutableShardRouting;
@@ -31,6 +30,8 @@ import org.elasticsearch.common.inject.Inject;
 import org.elasticsearch.common.settings.ImmutableSettings;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.node.settings.NodeSettingsService;
+import org.elasticsearch.util.ESCollections;
+import org.elasticsearch.util.ESCollections.ObjectIntMap;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -179,10 +180,10 @@ public class AwarenessAllocationDecider extends AllocationDecider {
             }
 
             // build attr_value -> nodes map
-            TObjectIntHashMap<String> nodesPerAttribute = allocation.routingNodes().nodesPerAttributesCounts(awarenessAttribute);
+            ObjectIntMap<String> nodesPerAttribute = allocation.routingNodes().nodesPerAttributesCounts(awarenessAttribute);
 
             // build the count of shards per attribute value
-            TObjectIntHashMap<String> shardPerAttribute = new TObjectIntHashMap<String>();
+            ObjectIntMap<String> shardPerAttribute = ESCollections.newObjectIntMap();
             for (RoutingNode routingNode : allocation.routingNodes()) {
                 for (int i = 0; i < routingNode.shards().size(); i++) {
                     MutableShardRouting nodeShardRouting = routingNode.shards().get(i);
@@ -233,7 +234,7 @@ public class AwarenessAllocationDecider extends AllocationDecider {
             }
             int leftoverPerAttribute = totalLeftover == 0 ? 0 : 1;
 
-            int currentNodeCount = shardPerAttribute.get(node.node().attributes().get(awarenessAttribute));
+            int currentNodeCount = shardPerAttribute.getX(node.node().attributes().get(awarenessAttribute));
             // if we are above with leftover, then we know we are not good, even with mod
             if (currentNodeCount > (requiredCountPerAttribute + leftoverPerAttribute)) {
                 return false;

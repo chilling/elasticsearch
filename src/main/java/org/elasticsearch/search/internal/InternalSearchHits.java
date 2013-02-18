@@ -20,7 +20,6 @@
 package org.elasticsearch.search.internal;
 
 import com.google.common.collect.Iterators;
-import gnu.trove.map.hash.TIntObjectHashMap;
 import org.elasticsearch.common.io.stream.StreamInput;
 import org.elasticsearch.common.io.stream.StreamOutput;
 import org.elasticsearch.common.util.concurrent.ThreadLocals;
@@ -29,6 +28,8 @@ import org.elasticsearch.common.xcontent.XContentBuilderString;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.SearchHits;
 import org.elasticsearch.search.SearchShardTarget;
+import org.elasticsearch.util.ESCollections;
+import org.elasticsearch.util.ESCollections.IntObjectMap;
 
 import java.io.IOException;
 import java.util.IdentityHashMap;
@@ -52,7 +53,7 @@ public class InternalSearchHits implements SearchHits {
         }
 
         private IdentityHashMap<SearchShardTarget, Integer> shardHandleLookup = new IdentityHashMap<SearchShardTarget, Integer>();
-        private TIntObjectHashMap<SearchShardTarget> handleShardLookup = new TIntObjectHashMap<SearchShardTarget>();
+        private IntObjectMap<SearchShardTarget> handleShardLookup = ESCollections.newIntObjectMap();
         private ShardTargetType streamShardTarget = ShardTargetType.STREAM;
 
         public StreamContext reset() {
@@ -66,7 +67,7 @@ public class InternalSearchHits implements SearchHits {
             return shardHandleLookup;
         }
 
-        public TIntObjectHashMap<SearchShardTarget> handleShardLookup() {
+        public IntObjectMap<SearchShardTarget> handleShardLookup() {
             return handleShardLookup;
         }
 

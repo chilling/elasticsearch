@@ -1,7 +1,8 @@
 package org.elasticsearch.common.lucene.search.vectorhighlight;
 
-import gnu.trove.set.hash.TCharHashSet;
 import org.apache.lucene.search.vectorhighlight.BoundaryScanner;
+import org.elasticsearch.util.ESCollections;
+import org.elasticsearch.util.ESCollections.CharSet;
 
 /**
  * A copy of Lucene {@link org.apache.lucene.search.vectorhighlight.SimpleBoundaryScanner}.
@@ -18,7 +19,7 @@ public class SimpleBoundaryScanner2 implements BoundaryScanner {
     public static final SimpleBoundaryScanner2 DEFAULT = new SimpleBoundaryScanner2();
 
     public int maxScan;
-    public TCharHashSet boundaryChars;
+    public CharSet boundaryChars;
 
     public SimpleBoundaryScanner2() {
         this(DEFAULT_MAX_SCAN, DEFAULT_BOUNDARY_CHARS);
@@ -26,7 +27,7 @@ public class SimpleBoundaryScanner2 implements BoundaryScanner {
 
     public SimpleBoundaryScanner2(int maxScan, char[] boundaryChars) {
         this.maxScan = maxScan;
-        this.boundaryChars = new TCharHashSet(boundaryChars);
+        this.boundaryChars = ESCollections.newCharSet(boundaryChars);
     }
 
     public int findStartOffset(StringBuilder buffer, int start) {

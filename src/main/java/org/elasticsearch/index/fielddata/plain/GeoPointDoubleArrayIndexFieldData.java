@@ -19,7 +19,6 @@
 
 package org.elasticsearch.index.fielddata.plain;
 
-import gnu.trove.list.array.TDoubleArrayList;
 import org.apache.lucene.index.AtomicReader;
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.Terms;
@@ -36,6 +35,8 @@ import org.elasticsearch.index.fielddata.ordinals.Ordinals.Docs;
 import org.elasticsearch.index.fielddata.ordinals.OrdinalsBuilder;
 import org.elasticsearch.index.mapper.FieldMapper;
 import org.elasticsearch.index.settings.IndexSettings;
+import org.elasticsearch.util.ESCollections;
+import org.elasticsearch.util.ESCollections.DoubleList;
 
 /**
  */
@@ -82,10 +83,10 @@ public class GeoPointDoubleArrayIndexFieldData extends AbstractIndexFieldData<Ge
             return GeoPointDoubleArrayAtomicFieldData.EMPTY;
         }
         // TODO: how can we guess the number of terms? numerics end up creating more terms per value...
-        final TDoubleArrayList lat = new TDoubleArrayList();
-        final TDoubleArrayList lon = new TDoubleArrayList();
-        lat.add(0); // first "t" indicates null value
-        lon.add(0); // first "t" indicates null value
+        final DoubleList lat = ESCollections.newDoubleList();
+        final DoubleList lon = ESCollections.newDoubleList();
+        lat.addX(0); // first "t" indicates null value
+        lon.addX(0); // first "t" indicates null value
         OrdinalsBuilder builder = new OrdinalsBuilder(terms, reader.maxDoc());
         final CharsRef spare = new CharsRef();
         try {
@@ -96,8 +97,8 @@ public class GeoPointDoubleArrayIndexFieldData extends AbstractIndexFieldData<Ge
                 boolean parsed = false;
                 for (int i = spare.offset; i < spare.length; i++) {
                     if (spare.chars[i] == ',') { // safes a string creation 
-                        lat.add(Double.parseDouble(new String(spare.chars, spare.offset, (i - spare.offset))));
-                        lon.add(Double.parseDouble(new String(spare.chars, (spare.offset + (i + 1)), spare.length - ((i + 1) - spare.offset))));
+                        lat.addX(Double.parseDouble(new String(spare.chars, spare.offset, (i - spare.offset))));
+                        lon.addX(Double.parseDouble(new String(spare.chars, (spare.offset + (i + 1)), spare.length - ((i + 1) - spare.offset))));
                         parsed = true;
                         break;
                     }

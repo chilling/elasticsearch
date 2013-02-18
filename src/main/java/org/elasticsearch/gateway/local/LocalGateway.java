@@ -20,7 +20,6 @@
 package org.elasticsearch.gateway.local;
 
 import com.google.common.collect.Sets;
-import gnu.trove.map.hash.TObjectIntHashMap;
 import org.elasticsearch.ElasticSearchException;
 import org.elasticsearch.action.FailedNodeException;
 import org.elasticsearch.cluster.ClusterChangedEvent;
@@ -41,6 +40,8 @@ import org.elasticsearch.gateway.local.state.meta.LocalGatewayMetaState;
 import org.elasticsearch.gateway.local.state.meta.TransportNodesListGatewayMetaState;
 import org.elasticsearch.gateway.local.state.shards.LocalGatewayShardsState;
 import org.elasticsearch.index.gateway.local.LocalIndexGatewayModule;
+import org.elasticsearch.util.ESCollections;
+import org.elasticsearch.util.ESCollections.ObjectIntMap;
 
 import java.util.Set;
 
@@ -136,7 +137,7 @@ public class LocalGateway extends AbstractLifecycleComponent<Gateway> implements
         }
 
         MetaData.Builder metaDataBuilder = MetaData.builder();
-        TObjectIntHashMap<String> indices = new TObjectIntHashMap<String>();
+        ObjectIntMap<String> indices = ESCollections.newObjectIntMap();
         MetaData electedGlobalState = null;
         int found = 0;
         for (TransportNodesListGatewayMetaState.NodeLocalGatewayMetaState nodeState : nodesState) {

@@ -48,7 +48,7 @@ public class ExtTHashMap<K, V> extends THashMap<K, V> {
      * Internal method to get the actual values associated. Some values might have "null" or no entry
      * values.
      */
-    public Object[] internalValues() {
-        return this._values;
-    }
+//    public Object[] internalValues() {
+//        return this._values;
+//    }
 }

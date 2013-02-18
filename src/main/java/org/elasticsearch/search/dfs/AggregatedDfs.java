@@ -19,15 +19,14 @@
 
 package org.elasticsearch.search.dfs;
 
-import gnu.trove.impl.Constants;
-import gnu.trove.map.TMap;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.CollectionStatistics;
 import org.apache.lucene.search.TermStatistics;
 import org.elasticsearch.common.io.stream.StreamInput;
 import org.elasticsearch.common.io.stream.StreamOutput;
 import org.elasticsearch.common.io.stream.Streamable;
-import org.elasticsearch.common.trove.ExtTHashMap;
+import org.elasticsearch.util.ESCollections;
+import org.elasticsearch.util.ESCollections.Constants;
 
 import java.io.IOException;
 import java.util.Map;
@@ -37,25 +36,25 @@ import java.util.Map;
  */
 public class AggregatedDfs implements Streamable {
 
-    private TMap<Term, TermStatistics> termStatistics;
-    private TMap<String, CollectionStatistics> fieldStatistics;
+    private Map<Term, TermStatistics> termStatistics;
+    private Map<String, CollectionStatistics> fieldStatistics;
     private long maxDoc;
 
     private AggregatedDfs() {
 
     }
 
-    public AggregatedDfs(TMap<Term, TermStatistics> termStatistics, TMap<String, CollectionStatistics> fieldStatistics, long maxDoc) {
+    public AggregatedDfs(Map<Term, TermStatistics> termStatistics, Map<String, CollectionStatistics> fieldStatistics, long maxDoc) {
         this.termStatistics = termStatistics;
         this.fieldStatistics = fieldStatistics;
         this.maxDoc = maxDoc;
     }
 
-    public TMap<Term, TermStatistics> termStatistics() {
+    public Map<Term, TermStatistics> termStatistics() {
         return termStatistics;
     }
 
-    public TMap<String, CollectionStatistics> fieldStatistics() {
+    public Map<String, CollectionStatistics> fieldStatistics() {
         return fieldStatistics;
     }
 
@@ -72,14 +71,14 @@ public class AggregatedDfs implements Streamable {
     @Override
     public void readFrom(StreamInput in) throws IOException {
         int size = in.readVInt();
-        termStatistics = new ExtTHashMap<Term, TermStatistics>(size, Constants.DEFAULT_LOAD_FACTOR);
+        termStatistics = ESCollections.newMap(size, Constants.DEFAULT_LOAD_FACTOR);
         for (int i = 0; i < size; i++) {
             Term term = new Term(in.readString(), in.readBytesRef());
             TermStatistics stats = new TermStatistics(in.readBytesRef(), in.readVLong(), in.readVLong());
             termStatistics.put(term, stats);
         }
         size = in.readVInt();
-        fieldStatistics = new ExtTHashMap<String, CollectionStatistics>(size, Constants.DEFAULT_LOAD_FACTOR);
+        fieldStatistics = ESCollections.newMap(size, Constants.DEFAULT_LOAD_FACTOR);
         for (int i = 0; i < size; i++) {
             String field = in.readString();
             CollectionStatistics stats = new CollectionStatistics(field, in.readVLong(), in.readVLong(), in.readVLong(), in.readVLong());

@@ -20,30 +20,30 @@
 package org.elasticsearch.search.dfs;
 
 import com.google.common.collect.ImmutableMap;
-import gnu.trove.map.TMap;
-import gnu.trove.set.hash.THashSet;
 import org.apache.lucene.index.IndexReaderContext;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermContext;
 import org.apache.lucene.search.CollectionStatistics;
 import org.apache.lucene.search.TermStatistics;
-import org.elasticsearch.common.trove.ExtTHashMap;
 import org.elasticsearch.common.util.concurrent.ThreadLocals;
 import org.elasticsearch.search.SearchParseElement;
 import org.elasticsearch.search.SearchPhase;
 import org.elasticsearch.search.internal.SearchContext;
+import org.elasticsearch.util.ESCollections;
 
 import java.util.Map;
+import java.util.Set;
 
 /**
  *
  */
 public class DfsPhase implements SearchPhase {
 
-    private static ThreadLocal<ThreadLocals.CleanableValue<THashSet<Term>>> cachedTermsSet = new ThreadLocal<ThreadLocals.CleanableValue<THashSet<Term>>>() {
+    private static ThreadLocal<ThreadLocals.CleanableValue<Set<Term>>> cachedTermsSet = new ThreadLocal<ThreadLocals.CleanableValue<Set<Term>>>() {
         @Override
-        protected ThreadLocals.CleanableValue<THashSet<Term>> initialValue() {
-            return new ThreadLocals.CleanableValue<THashSet<Term>>(new THashSet<Term>());
+        protected ThreadLocals.CleanableValue<Set<Term>> initialValue() {
+            Set<Term> set = ESCollections.newSet();
+            return new ThreadLocals.CleanableValue<Set<Term>>(set);
         }
     };
 
@@ -62,7 +62,7 @@ public class DfsPhase implements SearchPhase {
                 context.updateRewriteQuery(context.searcher().rewrite(context.query()));
             }
 
-            THashSet<Term> termsSet = cachedTermsSet.get().get();
+            Set<Term> termsSet = cachedTermsSet.get().get();
             termsSet.clear();
             context.query().extractTerms(termsSet);
             if (context.rescore() != null) {
@@ -78,7 +78,7 @@ public class DfsPhase implements SearchPhase {
                 termStatistics[i] = context.searcher().termStatistics(terms[i], termContext);
             }
 
-            TMap<String, CollectionStatistics> fieldStatistics = new ExtTHashMap<String, CollectionStatistics>();
+            Map<String, CollectionStatistics> fieldStatistics = ESCollections.newMap();
             for (Term term : terms) {
                 if (!fieldStatistics.containsKey(term.field())) {
                     fieldStatistics.put(term.field(), context.searcher().collectionStatistics(term.field()));

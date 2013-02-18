@@ -21,8 +21,8 @@ package org.elasticsearch.common;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
-import gnu.trove.set.hash.THashSet;
 import org.elasticsearch.common.io.FastStringReader;
+import org.elasticsearch.util.ESCollections;
 
 import java.io.BufferedReader;
 import java.util.*;
@@ -1008,7 +1008,9 @@ public class Strings {
                 count++;
             }
         }
-        final THashSet<String> result = new THashSet<String>(count);
+        
+        final Set<String> result = ESCollections.newSet(count);
+        
         final int len = chars.length;
         int start = 0;  // starting index in chars of the current substring.
         int pos = 0;    // current index in chars.

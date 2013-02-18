@@ -19,9 +19,6 @@
 
 package org.elasticsearch.test.integration.recovery;
 
-import gnu.trove.procedure.TIntProcedure;
-import gnu.trove.set.TIntSet;
-import gnu.trove.set.hash.TIntHashSet;
 import org.elasticsearch.action.admin.cluster.health.ClusterHealthResponse;
 import org.elasticsearch.action.bulk.BulkItemResponse;
 import org.elasticsearch.action.bulk.BulkRequestBuilder;
@@ -36,6 +33,8 @@ import org.elasticsearch.index.shard.ShardId;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.SearchHits;
 import org.elasticsearch.test.integration.AbstractNodesTests;
+import org.elasticsearch.util.ESCollections;
+import org.elasticsearch.util.ESCollections.IntSet;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.Test;
 
@@ -250,20 +249,25 @@ public class RelocationTests extends AbstractNodesTests {
                     for (int hit = 0; hit < indexCounter.get(); hit++) {
                         hitIds[hit] = hit + 1;
                     }
-                    TIntSet set = new TIntHashSet(hitIds);
+                    IntSet set = ESCollections.newIntSet(hitIds);
                     for (SearchHit hit : hits.hits()) {
                         int id = Integer.parseInt(hit.id());
                         if (!set.remove(id)) {
                             logger.error("Extra id [{}]", id);
                         }
                     }
-                    set.forEach(new TIntProcedure() {
-                        @Override
-                        public boolean execute(int value) {
-                            logger.error("Missing id [{}]", value);
-                            return true;
-                        }
-                    });
+                    for(int value : set.toArray()) {
+                      logger.error("Missing id [{}]", value);
+                    }
+                    
+                    
+//                    set.forEach(new TIntProcedure() {
+//                        @Override
+//                        public boolean execute(int value) {
+//                            logger.error("Missing id [{}]", value);
+//                            return true;
+//                        }
+//                    });
                 }
                 assertThat(hits.totalHits(), equalTo(indexCounter.get()));
                 logger.info("--> DONE search test round {}", i + 1);
@@ -426,20 +430,25 @@ public class RelocationTests extends AbstractNodesTests {
                     for (int hit = 0; hit < indexCounter.get(); hit++) {
                         hitIds[hit] = hit + 1;
                     }
-                    TIntSet set = new TIntHashSet(hitIds);
+                    IntSet set = ESCollections.newIntSet(hitIds);
                     for (SearchHit hit : hits.hits()) {
                         int id = Integer.parseInt(hit.id());
                         if (!set.remove(id)) {
                             logger.error("Extra id [{}]", id);
                         }
                     }
-                    set.forEach(new TIntProcedure() {
-                        @Override
-                        public boolean execute(int value) {
-                            logger.error("Missing id [{}]", value);
-                            return true;
-                        }
-                    });
+                    
+                    for(int value : set.toArray()) {
+                        logger.error("Missing id [{}]", value);
+                    }
+                    
+//                    set.forEach(new TIntProcedure() {
+//                        @Override
+//                        public boolean execute(int value) {
+//                            logger.error("Missing id [{}]", value);
+//                            return true;
+//                        }
+//                    });
                 }
                 assertThat(hits.totalHits(), equalTo(indexCounter.get()));
                 logger.info("--> DONE search test round {}", i + 1);

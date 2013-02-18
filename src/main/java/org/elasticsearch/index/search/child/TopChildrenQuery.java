@@ -19,7 +19,6 @@
 
 package org.elasticsearch.index.search.child;
 
-import gnu.trove.map.hash.TIntObjectHashMap;
 import org.apache.lucene.index.*;
 import org.apache.lucene.search.*;
 import org.apache.lucene.util.Bits;
@@ -30,6 +29,7 @@ import org.elasticsearch.common.bytes.HashedBytesArray;
 import org.elasticsearch.common.lucene.search.EmptyScorer;
 import org.elasticsearch.common.trove.ExtTHashMap;
 import org.elasticsearch.search.internal.SearchContext;
+import org.elasticsearch.util.ESCollections.IntObjectMap;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -62,7 +62,7 @@ public class TopChildrenQuery extends Query implements SearchContext.Rewrite {
     private final Query originalChildQuery;
 
     private Query rewrittenChildQuery;
-    private ExtTHashMap<Object, ParentDoc[]> parentDocs;
+    private Map<Object, ParentDoc[]> parentDocs;
 
     // Note, the query is expected to already be filtered to only child type docs
     public TopChildrenQuery(SearchContext searchContext, Query childQuery, String childType, String parentType, ScoreType scoreType, int factor, int incrementalFactor) {
@@ -166,7 +166,7 @@ public class TopChildrenQuery extends Query implements SearchContext.Rewrite {
 
     int resolveParentDocuments(TopDocs topDocs, SearchContext context) {
         int parentHitsResolved = 0;
-        ExtTHashMap<Object, TIntObjectHashMap<ParentDoc>> parentDocsPerReader = CacheRecycler.popHashMap();
+        Map<Object, IntObjectMap<ParentDoc>> parentDocsPerReader = CacheRecycler.popHashMap();
         for (ScoreDoc scoreDoc : topDocs.scoreDocs) {
             int readerIndex = ReaderUtil.subIndex(scoreDoc.doc, context.searcher().getIndexReader().leaves());
             AtomicReaderContext subContext = context.searcher().getIndexReader().leaves().get(readerIndex);
@@ -186,7 +186,7 @@ public class TopChildrenQuery extends Query implements SearchContext.Rewrite {
                 if (parentDocId != -1 && (liveDocs == null || liveDocs.get(parentDocId))) {
                     // we found a match, add it and break
 
-                    TIntObjectHashMap<ParentDoc> readerParentDocs = parentDocsPerReader.get(indexReader.getCoreCacheKey());
+                    IntObjectMap<ParentDoc> readerParentDocs = parentDocsPerReader.get(indexReader.getCoreCacheKey());
                     if (readerParentDocs == null) {
                         readerParentDocs = CacheRecycler.popIntObjectMap();
                         parentDocsPerReader.put(indexReader.getCoreCacheKey(), readerParentDocs);
@@ -212,7 +212,7 @@ public class TopChildrenQuery extends Query implements SearchContext.Rewrite {
             }
         }
 
-        for (Map.Entry<Object, TIntObjectHashMap<ParentDoc>> entry : parentDocsPerReader.entrySet()) {
+        for (Map.Entry<Object, IntObjectMap<ParentDoc>> entry : parentDocsPerReader.entrySet()) {
             ParentDoc[] values = entry.getValue().values(new ParentDoc[entry.getValue().size()]);
             Arrays.sort(values, PARENT_DOC_COMP);
             parentDocs.put(entry.getKey(), values);

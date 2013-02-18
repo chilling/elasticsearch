@@ -20,8 +20,9 @@
 package org.elasticsearch.index.query;
 
 import com.google.common.collect.Maps;
-import gnu.trove.list.array.TFloatArrayList;
 import org.elasticsearch.common.xcontent.XContentBuilder;
+import org.elasticsearch.util.ESCollections;
+import org.elasticsearch.util.ESCollections.FloatList;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -46,7 +47,7 @@ public class CustomFiltersScoreQueryBuilder extends BaseQueryBuilder implements 
 
     private ArrayList<FilterBuilder> filters = new ArrayList<FilterBuilder>();
     private ArrayList<String> scripts = new ArrayList<String>();
-    private TFloatArrayList boosts = new TFloatArrayList();
+    private FloatList boosts = ESCollections.newFloatList();
 
     public CustomFiltersScoreQueryBuilder(QueryBuilder queryBuilder) {
         this.queryBuilder = queryBuilder;
@@ -55,14 +56,14 @@ public class CustomFiltersScoreQueryBuilder extends BaseQueryBuilder implements 
     public CustomFiltersScoreQueryBuilder add(FilterBuilder filter, String script) {
         this.filters.add(filter);
         this.scripts.add(script);
-        this.boosts.add(-1);
+        this.boosts.addX(-1);
         return this;
     }
 
     public CustomFiltersScoreQueryBuilder add(FilterBuilder filter, float boost) {
         this.filters.add(filter);
         this.scripts.add(null);
-        this.boosts.add(boost);
+        this.boosts.addX(boost);
         return this;
     }
 

@@ -19,13 +19,13 @@
 
 package org.elasticsearch.common.lucene.search;
 
-import gnu.trove.set.hash.THashSet;
 import org.apache.lucene.index.*;
 import org.apache.lucene.search.MultiPhraseQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.StringHelper;
 import org.apache.lucene.util.ToStringUtils;
+import org.elasticsearch.util.ESCollections;
 
 import java.io.IOException;
 import java.util.*;
@@ -138,7 +138,7 @@ public class MultiPhrasePrefixQuery extends Query {
         }
         Term[] suffixTerms = termArrays.get(sizeMinus1);
         int position = positions.get(sizeMinus1);
-        Set<Term> terms = new THashSet<Term>();
+        Set<Term> terms = ESCollections.newSet();
         for (Term term : suffixTerms) {
             getPrefixTerms(terms, term, reader);
             if (terms.size() > maxExpansions) {

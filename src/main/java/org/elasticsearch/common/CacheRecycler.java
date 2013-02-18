@@ -19,33 +19,46 @@
 
 package org.elasticsearch.common;
 
-import gnu.trove.map.hash.*;
-import gnu.trove.set.hash.THashSet;
-import org.elasticsearch.common.trove.ExtTDoubleObjectHashMap;
-import org.elasticsearch.common.trove.ExtTHashMap;
-import org.elasticsearch.common.trove.ExtTLongObjectHashMap;
+
 import org.elasticsearch.common.util.concurrent.ConcurrentCollections;
+import org.elasticsearch.util.ESCollections;
+import org.elasticsearch.util.ESCollections.ByteIntMap;
+import org.elasticsearch.util.ESCollections.DoubleIntMap;
+import org.elasticsearch.util.ESCollections.DoubleObjectMap;
+import org.elasticsearch.util.ESCollections.FloatIntMap;
+import org.elasticsearch.util.ESCollections.IntIntMap;
+import org.elasticsearch.util.ESCollections.IntObjectMap;
+import org.elasticsearch.util.ESCollections.LongIntMap;
+import org.elasticsearch.util.ESCollections.LongLongMap;
+import org.elasticsearch.util.ESCollections.LongObjectMap;
+import org.elasticsearch.util.ESCollections.ObjectFloatMap;
+import org.elasticsearch.util.ESCollections.ObjectIntMap;
+import org.elasticsearch.util.ESCollections.ShortIntMap;
 
 import java.lang.ref.SoftReference;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
 import java.util.Queue;
+import java.util.Set;
 
 public class CacheRecycler {
 
     public static void clear() {
         hashMap.clear();
         hashSet.clear();
-        doubleObjectHashMap.clear();
-        longObjectHashMap.clear();
-        longLongHashMap.clear();
-        intIntHashMap.clear();
-        floatIntHashMap.clear();
-        doubleIntHashMap.clear();
-        shortIntHashMap.clear();
-        longIntHashMap.clear();
-        objectIntHashMap.clear();
-        intObjectHashMap.clear();
-        objectFloatHashMap.clear();
+        DoubleObjectMap.clear();
+        LongObjectMap.clear();
+        LongLongMap.clear();
+        IntIntMap.clear();
+        FloatIntMap.clear();
+        DoubleIntMap.clear();
+        ShortIntMap.clear();
+        LongIntMap.clear();
+        ObjectIntMap.clear();
+        IntObjectMap.clear();
+        ObjectFloatMap.clear();
         objectArray.clear();
         intArray.clear();
     }
@@ -71,23 +84,23 @@ public class CacheRecycler {
 
     // ----- ExtTHashMap -----
 
-    private final static SoftWrapper<Queue<ExtTHashMap>> hashMap = new SoftWrapper<Queue<ExtTHashMap>>();
+    private final static SoftWrapper<Queue<Map<?, ?>>> hashMap = new SoftWrapper<Queue<Map<?, ?>>>();
 
     @SuppressWarnings("unchecked")
-    public static <K, V> ExtTHashMap<K, V> popHashMap() {
-        Queue<ExtTHashMap> ref = hashMap.get();
+    public static <K, V> Map<K, V> popHashMap() {
+        Queue<Map<?, ?>> ref = hashMap.get();
         if (ref == null) {
-            return new ExtTHashMap<K, V>();
+            return new HashMap<K, V>();
         }
-        ExtTHashMap map = ref.poll();
+        Map map = ref.poll();
         if (map == null) {
-            return new ExtTHashMap<K, V>();
+            return ESCollections.newMap();
         }
         return map;
     }
 
-    public static void pushHashMap(ExtTHashMap map) {
-        Queue<ExtTHashMap> ref = hashMap.get();
+    public static void pushHashMap(Map<?, ?> map) {
+        Queue<Map<?, ?>> ref = hashMap.get();
         if (ref == null) {
             ref = ConcurrentCollections.newQueue();
             hashMap.set(ref);
@@ -98,23 +111,23 @@ public class CacheRecycler {
 
     // ----- THashSet -----
 
-    private final static SoftWrapper<Queue<THashSet>> hashSet = new SoftWrapper<Queue<THashSet>>();
+    private final static SoftWrapper<Queue<Set<?>>> hashSet = new SoftWrapper<Queue<Set<?>>>();
 
     @SuppressWarnings("unchecked")
-    public static <T> THashSet<T> popHashSet() {
-        Queue<THashSet> ref = hashSet.get();
+    public static <T> Set<T> popHashSet() {
+        Queue<Set<?>> ref = hashSet.get();
         if (ref == null) {
-            return new THashSet<T>();
+            return ESCollections.newSet();
         }
-        THashSet set = ref.poll();
+        Set set = ref.poll();
         if (set == null) {
-            return new THashSet<T>();
+            return ESCollections.newSet();
         }
         return set;
     }
 
-    public static void pushHashSet(THashSet map) {
-        Queue<THashSet> ref = hashSet.get();
+    public static void pushHashSet(Set<?> map) {
+        Queue<Set<?>> ref = hashSet.get();
         if (ref == null) {
             ref = ConcurrentCollections.newQueue();
             hashSet.set(ref);
@@ -123,330 +136,330 @@ public class CacheRecycler {
         ref.add(map);
     }
 
-    // ------ ExtTDoubleObjectHashMap -----
+    // ------ ExtTDoubleObjectMap -----
 
-    private final static SoftWrapper<Queue<ExtTDoubleObjectHashMap>> doubleObjectHashMap = new SoftWrapper<Queue<ExtTDoubleObjectHashMap>>();
-
-    @SuppressWarnings("unchecked")
-    public static <T> ExtTDoubleObjectHashMap<T> popDoubleObjectMap() {
-        Queue<ExtTDoubleObjectHashMap> ref = doubleObjectHashMap.get();
-        if (ref == null) {
-            return new ExtTDoubleObjectHashMap();
-        }
-        ExtTDoubleObjectHashMap map = ref.poll();
-        if (map == null) {
-            return new ExtTDoubleObjectHashMap();
-        }
-        return map;
-    }
-
-    public static void pushDoubleObjectMap(ExtTDoubleObjectHashMap map) {
-        Queue<ExtTDoubleObjectHashMap> ref = doubleObjectHashMap.get();
-        if (ref == null) {
-            ref = ConcurrentCollections.newQueue();
-            doubleObjectHashMap.set(ref);
-        }
-        map.clear();
-        ref.add(map);
-    }
-
-    // ----- ExtTLongObjectHashMap ----
-
-    private final static SoftWrapper<Queue<ExtTLongObjectHashMap>> longObjectHashMap = new SoftWrapper<Queue<ExtTLongObjectHashMap>>();
+    private final static SoftWrapper<Queue<DoubleObjectMap<?>>> DoubleObjectMap = new SoftWrapper<Queue<DoubleObjectMap<?>>>();
 
     @SuppressWarnings("unchecked")
-    public static <T> ExtTLongObjectHashMap<T> popLongObjectMap() {
-        Queue<ExtTLongObjectHashMap> ref = longObjectHashMap.get();
+    public static <T> DoubleObjectMap<T> popDoubleObjectMap() {
+        Queue<DoubleObjectMap<?>> ref = DoubleObjectMap.get();
         if (ref == null) {
-            return new ExtTLongObjectHashMap();
+            return ESCollections.newDoubleObjectMap();
         }
-        ExtTLongObjectHashMap map = ref.poll();
+        DoubleObjectMap map = ref.poll();
         if (map == null) {
-            return new ExtTLongObjectHashMap();
+            return ESCollections.newDoubleObjectMap();
         }
         return map;
     }
 
-    public static void pushLongObjectMap(ExtTLongObjectHashMap map) {
-        Queue<ExtTLongObjectHashMap> ref = longObjectHashMap.get();
+    public static void pushDoubleObjectMap(DoubleObjectMap<?> map) {
+        Queue<DoubleObjectMap<?>> ref = DoubleObjectMap.get();
         if (ref == null) {
             ref = ConcurrentCollections.newQueue();
-            longObjectHashMap.set(ref);
+            DoubleObjectMap.set(ref);
         }
         map.clear();
         ref.add(map);
     }
 
-    // ----- TLongLongHashMap ----
+    // ----- ExtTLongObjectMap ----
 
-    private final static SoftWrapper<Queue<TLongLongHashMap>> longLongHashMap = new SoftWrapper<Queue<TLongLongHashMap>>();
+    private final static SoftWrapper<Queue<LongObjectMap<?>>> LongObjectMap = new SoftWrapper<Queue<LongObjectMap<?>>>();
 
-    public static TLongLongHashMap popLongLongMap() {
-        Queue<TLongLongHashMap> ref = longLongHashMap.get();
+    @SuppressWarnings("unchecked")
+    public static <T> LongObjectMap<T> popLongObjectMap() {
+        Queue<LongObjectMap<?>> ref = LongObjectMap.get();
         if (ref == null) {
-            return new TLongLongHashMap();
+            return ESCollections.newLongObjectMap();
         }
-        TLongLongHashMap map = ref.poll();
+        LongObjectMap map = ref.poll();
         if (map == null) {
-            return new TLongLongHashMap();
+            return ESCollections.newLongObjectMap();
         }
         return map;
     }
 
-    public static void pushLongLongMap(TLongLongHashMap map) {
-        Queue<TLongLongHashMap> ref = longLongHashMap.get();
+    public static void pushLongObjectMap(LongObjectMap map) {
+        Queue<LongObjectMap<?>> ref = LongObjectMap.get();
         if (ref == null) {
             ref = ConcurrentCollections.newQueue();
-            longLongHashMap.set(ref);
+            LongObjectMap.set(ref);
         }
         map.clear();
         ref.add(map);
     }
 
-    // ----- TIntIntHashMap ----
+    // ----- TLongLongMap ----
 
-    private final static SoftWrapper<Queue<TIntIntHashMap>> intIntHashMap = new SoftWrapper<Queue<TIntIntHashMap>>();
+    private final static SoftWrapper<Queue<LongLongMap>> LongLongMap = new SoftWrapper<Queue<LongLongMap>>();
 
-
-    public static TIntIntHashMap popIntIntMap() {
-        Queue<TIntIntHashMap> ref = intIntHashMap.get();
+    public static LongLongMap popLongLongMap() {
+        Queue<LongLongMap> ref = LongLongMap.get();
         if (ref == null) {
-            return new TIntIntHashMap();
+            return ESCollections.newLongLongMap();
         }
-        TIntIntHashMap map = ref.poll();
+        LongLongMap map = ref.poll();
         if (map == null) {
-            return new TIntIntHashMap();
+            return ESCollections.newLongLongMap();
         }
         return map;
     }
 
-    public static void pushIntIntMap(TIntIntHashMap map) {
-        Queue<TIntIntHashMap> ref = intIntHashMap.get();
+    public static void pushLongLongMap(LongLongMap map) {
+        Queue<LongLongMap> ref = LongLongMap.get();
         if (ref == null) {
             ref = ConcurrentCollections.newQueue();
-            intIntHashMap.set(ref);
+            LongLongMap.set(ref);
         }
         map.clear();
         ref.add(map);
     }
 
+    // ----- TIntIntMap ----
 
-    // ----- TFloatIntHashMap ---
-
-    private final static SoftWrapper<Queue<TFloatIntHashMap>> floatIntHashMap = new SoftWrapper<Queue<TFloatIntHashMap>>();
+    private final static SoftWrapper<Queue<IntIntMap>> IntIntMap = new SoftWrapper<Queue<IntIntMap>>();
 
 
-    public static TFloatIntHashMap popFloatIntMap() {
-        Queue<TFloatIntHashMap> ref = floatIntHashMap.get();
+    public static IntIntMap popIntIntMap() {
+        Queue<IntIntMap> ref = IntIntMap.get();
         if (ref == null) {
-            return new TFloatIntHashMap();
+            return ESCollections.newIntIntMap();
         }
-        TFloatIntHashMap map = ref.poll();
+        IntIntMap map = ref.poll();
         if (map == null) {
-            return new TFloatIntHashMap();
+            return ESCollections.newIntIntMap();
         }
         return map;
     }
 
-    public static void pushFloatIntMap(TFloatIntHashMap map) {
-        Queue<TFloatIntHashMap> ref = floatIntHashMap.get();
+    public static void pushIntIntMap(IntIntMap map) {
+        Queue<IntIntMap> ref = IntIntMap.get();
         if (ref == null) {
             ref = ConcurrentCollections.newQueue();
-            floatIntHashMap.set(ref);
-        }
-        map.clear();
-        ref.add(map);
-    }
-
-
-    // ----- TDoubleIntHashMap ---
-
-    private final static SoftWrapper<Queue<TDoubleIntHashMap>> doubleIntHashMap = new SoftWrapper<Queue<TDoubleIntHashMap>>();
-
-
-    public static TDoubleIntHashMap popDoubleIntMap() {
-        Queue<TDoubleIntHashMap> ref = doubleIntHashMap.get();
-        if (ref == null) {
-            return new TDoubleIntHashMap();
-        }
-        TDoubleIntHashMap map = ref.poll();
-        if (map == null) {
-            return new TDoubleIntHashMap();
-        }
-        return map;
-    }
-
-    public static void pushDoubleIntMap(TDoubleIntHashMap map) {
-        Queue<TDoubleIntHashMap> ref = doubleIntHashMap.get();
-        if (ref == null) {
-            ref = ConcurrentCollections.newQueue();
-            doubleIntHashMap.set(ref);
+            IntIntMap.set(ref);
         }
         map.clear();
         ref.add(map);
     }
 
 
-    // ----- TByteIntHashMap ---
+    // ----- TFloatIntMap ---
 
-    private final static SoftWrapper<Queue<TByteIntHashMap>> byteIntHashMap = new SoftWrapper<Queue<TByteIntHashMap>>();
+    private final static SoftWrapper<Queue<FloatIntMap>> FloatIntMap = new SoftWrapper<Queue<FloatIntMap>>();
 
 
-    public static TByteIntHashMap popByteIntMap() {
-        Queue<TByteIntHashMap> ref = byteIntHashMap.get();
+    public static FloatIntMap popFloatIntMap() {
+        Queue<FloatIntMap> ref = FloatIntMap.get();
         if (ref == null) {
-            return new TByteIntHashMap();
+            return ESCollections.newFloatIntMap();
         }
-        TByteIntHashMap map = ref.poll();
+        FloatIntMap map = ref.poll();
         if (map == null) {
-            return new TByteIntHashMap();
+            return ESCollections.newFloatIntMap();
         }
         return map;
     }
 
-    public static void pushByteIntMap(TByteIntHashMap map) {
-        Queue<TByteIntHashMap> ref = byteIntHashMap.get();
+    public static void pushFloatIntMap(FloatIntMap map) {
+        Queue<FloatIntMap> ref = FloatIntMap.get();
         if (ref == null) {
             ref = ConcurrentCollections.newQueue();
-            byteIntHashMap.set(ref);
-        }
-        map.clear();
-        ref.add(map);
-    }
-
-    // ----- TShortIntHashMap ---
-
-    private final static SoftWrapper<Queue<TShortIntHashMap>> shortIntHashMap = new SoftWrapper<Queue<TShortIntHashMap>>();
-
-
-    public static TShortIntHashMap popShortIntMap() {
-        Queue<TShortIntHashMap> ref = shortIntHashMap.get();
-        if (ref == null) {
-            return new TShortIntHashMap();
-        }
-        TShortIntHashMap map = ref.poll();
-        if (map == null) {
-            return new TShortIntHashMap();
-        }
-        return map;
-    }
-
-    public static void pushShortIntMap(TShortIntHashMap map) {
-        Queue<TShortIntHashMap> ref = shortIntHashMap.get();
-        if (ref == null) {
-            ref = ConcurrentCollections.newQueue();
-            shortIntHashMap.set(ref);
+            FloatIntMap.set(ref);
         }
         map.clear();
         ref.add(map);
     }
 
 
-    // ----- TLongIntHashMap ----
+    // ----- TDoubleIntMap ---
 
-    private final static SoftWrapper<Queue<TLongIntHashMap>> longIntHashMap = new SoftWrapper<Queue<TLongIntHashMap>>();
+    private final static SoftWrapper<Queue<DoubleIntMap>> DoubleIntMap = new SoftWrapper<Queue<DoubleIntMap>>();
 
 
-    public static TLongIntHashMap popLongIntMap() {
-        Queue<TLongIntHashMap> ref = longIntHashMap.get();
+    public static DoubleIntMap popDoubleIntMap() {
+        Queue<DoubleIntMap> ref = DoubleIntMap.get();
         if (ref == null) {
-            return new TLongIntHashMap();
+            return ESCollections.newDoubleIntMap();
         }
-        TLongIntHashMap map = ref.poll();
+        DoubleIntMap map = ref.poll();
         if (map == null) {
-            return new TLongIntHashMap();
+            return ESCollections.newDoubleIntMap();
         }
         return map;
     }
 
-    public static void pushLongIntMap(TLongIntHashMap map) {
-        Queue<TLongIntHashMap> ref = longIntHashMap.get();
+    public static void pushDoubleIntMap(DoubleIntMap map) {
+        Queue<DoubleIntMap> ref = DoubleIntMap.get();
         if (ref == null) {
             ref = ConcurrentCollections.newQueue();
-            longIntHashMap.set(ref);
+            DoubleIntMap.set(ref);
         }
         map.clear();
         ref.add(map);
     }
 
-    // ------ TObjectIntHashMap -----
 
-    private final static SoftWrapper<Queue<TObjectIntHashMap>> objectIntHashMap = new SoftWrapper<Queue<TObjectIntHashMap>>();
+    // ----- TByteIntMap ---
+
+    private final static SoftWrapper<Queue<ByteIntMap>> ByteIntMap = new SoftWrapper<Queue<ByteIntMap>>();
+
+
+    public static ByteIntMap popByteIntMap() {
+        Queue<ByteIntMap> ref = ByteIntMap.get();
+        if (ref == null) {
+            return ESCollections.newByteIntMap();
+        }
+        ByteIntMap map = ref.poll();
+        if (map == null) {
+            return ESCollections.newByteIntMap();
+        }
+        return map;
+    }
+
+    public static void pushByteIntMap(ByteIntMap map) {
+        Queue<ByteIntMap> ref = ByteIntMap.get();
+        if (ref == null) {
+            ref = ConcurrentCollections.newQueue();
+            ByteIntMap.set(ref);
+        }
+        map.clear();
+        ref.add(map);
+    }
+
+    // ----- TShortIntMap ---
+
+    private final static SoftWrapper<Queue<ShortIntMap>> ShortIntMap = new SoftWrapper<Queue<ShortIntMap>>();
+
+
+    public static ShortIntMap popShortIntMap() {
+        Queue<ShortIntMap> ref = ShortIntMap.get();
+        if (ref == null) {
+            return ESCollections.newShortIntMap();
+        }
+        ShortIntMap map = ref.poll();
+        if (map == null) {
+            return ESCollections.newShortIntMap();
+        }
+        return map;
+    }
+
+    public static void pushShortIntMap(ShortIntMap map) {
+        Queue<ShortIntMap> ref = ShortIntMap.get();
+        if (ref == null) {
+            ref = ConcurrentCollections.newQueue();
+            ShortIntMap.set(ref);
+        }
+        map.clear();
+        ref.add(map);
+    }
+
+
+    // ----- TLongIntMap ----
+
+    private final static SoftWrapper<Queue<LongIntMap>> LongIntMap = new SoftWrapper<Queue<LongIntMap>>();
+
+
+    public static LongIntMap popLongIntMap() {
+        Queue<LongIntMap> ref = LongIntMap.get();
+        if (ref == null) {
+            return ESCollections.newLongIntMap();
+        }
+        LongIntMap map = ref.poll();
+        if (map == null) {
+            return ESCollections.newLongIntMap();
+        }
+        return map;
+    }
+
+    public static void pushLongIntMap(LongIntMap map) {
+        Queue<LongIntMap> ref = LongIntMap.get();
+        if (ref == null) {
+            ref = ConcurrentCollections.newQueue();
+            LongIntMap.set(ref);
+        }
+        map.clear();
+        ref.add(map);
+    }
+
+    // ------ TObjectIntMap -----
+
+    private final static SoftWrapper<Queue<ObjectIntMap<?>>> ObjectIntMap = new SoftWrapper<Queue<ObjectIntMap<?>>>();
 
 
     @SuppressWarnings({"unchecked"})
-    public static <T> TObjectIntHashMap<T> popObjectIntMap() {
-        Queue<TObjectIntHashMap> ref = objectIntHashMap.get();
+    public static <T> ObjectIntMap<T> popObjectIntMap() {
+        Queue<ObjectIntMap<?>> ref = ObjectIntMap.get();
         if (ref == null) {
-            return new TObjectIntHashMap();
+            return ESCollections.newObjectIntMap();
         }
-        TObjectIntHashMap map = ref.poll();
+        ObjectIntMap map = ref.poll();
         if (map == null) {
-            return new TObjectIntHashMap();
+            return ESCollections.newObjectIntMap();
         }
         return map;
     }
 
-    public static <T> void pushObjectIntMap(TObjectIntHashMap<T> map) {
-        Queue<TObjectIntHashMap> ref = objectIntHashMap.get();
+    public static <T> void pushObjectIntMap(ObjectIntMap<T> map) {
+        Queue<ObjectIntMap<?>> ref = ObjectIntMap.get();
         if (ref == null) {
             ref = ConcurrentCollections.newQueue();
-            objectIntHashMap.set(ref);
+            ObjectIntMap.set(ref);
         }
         map.clear();
         ref.add(map);
     }
 
-    // ------ TIntObjectHashMap -----
+    // ------ TIntObjectMap -----
 
-    private final static SoftWrapper<Queue<TIntObjectHashMap>> intObjectHashMap = new SoftWrapper<Queue<TIntObjectHashMap>>();
+    private final static SoftWrapper<Queue<IntObjectMap<?>>> IntObjectMap = new SoftWrapper<Queue<IntObjectMap<?>>>();
 
 
     @SuppressWarnings({"unchecked"})
-    public static <T> TIntObjectHashMap<T> popIntObjectMap() {
-        Queue<TIntObjectHashMap> ref = intObjectHashMap.get();
+    public static <T> IntObjectMap<T> popIntObjectMap() {
+        Queue<IntObjectMap<?>> ref = IntObjectMap.get();
         if (ref == null) {
-            return new TIntObjectHashMap<T>();
+            return ESCollections.newIntObjectMap();
         }
-        TIntObjectHashMap<T> map = ref.poll();
+        IntObjectMap map = ref.poll();
         if (map == null) {
-            return new TIntObjectHashMap<T>();
+            return ESCollections.newIntObjectMap();
         }
         return map;
     }
 
-    public static <T> void pushIntObjectMap(TIntObjectHashMap<T> map) {
-        Queue<TIntObjectHashMap> ref = intObjectHashMap.get();
+    public static <T> void pushIntObjectMap(IntObjectMap<T> map) {
+        Queue<IntObjectMap<?>> ref = IntObjectMap.get();
         if (ref == null) {
             ref = ConcurrentCollections.newQueue();
-            intObjectHashMap.set(ref);
+            IntObjectMap.set(ref);
         }
         map.clear();
         ref.add(map);
     }
 
-    // ------ TObjectFloatHashMap -----
+    // ------ TObjectFloatMap -----
 
-    private final static SoftWrapper<Queue<TObjectFloatHashMap>> objectFloatHashMap = new SoftWrapper<Queue<TObjectFloatHashMap>>();
+    private final static SoftWrapper<Queue<ObjectFloatMap<?>>> ObjectFloatMap = new SoftWrapper<Queue<ObjectFloatMap<?>>>();
 
     @SuppressWarnings({"unchecked"})
-    public static <T> TObjectFloatHashMap<T> popObjectFloatMap() {
-        Queue<TObjectFloatHashMap> ref = objectFloatHashMap.get();
+    public static <T> ObjectFloatMap<T> popObjectFloatMap() {
+        Queue<ObjectFloatMap<?>> ref = ObjectFloatMap.get();
         if (ref == null) {
-            return new TObjectFloatHashMap();
+            return ESCollections.newObjectFloatMap();
         }
-        TObjectFloatHashMap map = ref.poll();
+        ObjectFloatMap map = ref.poll();
         if (map == null) {
-            return new TObjectFloatHashMap();
+            return ESCollections.newObjectFloatMap();
         }
         return map;
     }
 
-    public static <T> void pushObjectFloatMap(TObjectFloatHashMap<T> map) {
-        Queue<TObjectFloatHashMap> ref = objectFloatHashMap.get();
+    public static <T> void pushObjectFloatMap(ObjectFloatMap<T> map) {
+        Queue<ObjectFloatMap<?>> ref = ObjectFloatMap.get();
         if (ref == null) {
             ref = ConcurrentCollections.newQueue();
-            objectFloatHashMap.set(ref);
+            ObjectFloatMap.set(ref);
         }
         map.clear();
         ref.add(map);

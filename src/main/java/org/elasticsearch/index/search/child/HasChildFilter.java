@@ -19,7 +19,6 @@
 
 package org.elasticsearch.index.search.child;
 
-import gnu.trove.set.hash.THashSet;
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.DocIdSet;
@@ -36,6 +35,7 @@ import org.elasticsearch.index.cache.id.IdReaderTypeCache;
 import org.elasticsearch.search.internal.SearchContext;
 
 import java.io.IOException;
+import java.util.Set;
 
 /**
  *
@@ -67,7 +67,7 @@ public abstract class HasChildFilter extends Filter implements SearchContext.Rew
 
     static class Uid extends HasChildFilter {
 
-        THashSet<HashedBytesArray> collectedUids;
+        Set<HashedBytesArray> collectedUids;
 
         Uid(Query childQuery, String parentType, String childType, SearchContext searchContext) {
             super(childQuery, parentType, childType, searchContext);
@@ -105,10 +105,10 @@ public abstract class HasChildFilter extends Filter implements SearchContext.Rew
         static class ParentDocSet extends MatchDocIdSet {
 
             final IndexReader reader;
-            final THashSet<HashedBytesArray> parents;
+            final Set<HashedBytesArray> parents;
             final IdReaderTypeCache typeCache;
 
-            ParentDocSet(IndexReader reader, @Nullable Bits acceptDocs, THashSet<HashedBytesArray> parents, IdReaderTypeCache typeCache) {
+            ParentDocSet(IndexReader reader, @Nullable Bits acceptDocs, Set<HashedBytesArray> parents, IdReaderTypeCache typeCache) {
                 super(reader.maxDoc(), acceptDocs);
                 this.reader = reader;
                 this.parents = parents;
@@ -125,11 +125,11 @@ public abstract class HasChildFilter extends Filter implements SearchContext.Rew
 
             final String parentType;
             final SearchContext context;
-            final THashSet<HashedBytesArray> collectedUids;
+            final Set<HashedBytesArray> collectedUids;
 
             private IdReaderTypeCache typeCache;
 
-            UidCollector(String parentType, SearchContext context, THashSet<HashedBytesArray> collectedUids) {
+            UidCollector(String parentType, SearchContext context, Set<HashedBytesArray> collectedUids) {
                 this.parentType = parentType;
                 this.context = context;
                 this.collectedUids = collectedUids;

@@ -23,7 +23,6 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.UnmodifiableIterator;
-import gnu.trove.set.hash.THashSet;
 import org.elasticsearch.ElasticSearchIllegalArgumentException;
 import org.elasticsearch.action.support.IgnoreIndices;
 import org.elasticsearch.cluster.block.ClusterBlock;
@@ -41,6 +40,7 @@ import org.elasticsearch.common.xcontent.*;
 import org.elasticsearch.index.Index;
 import org.elasticsearch.indices.IndexMissingException;
 import org.elasticsearch.rest.RestStatus;
+import org.elasticsearch.util.ESCollections;
 
 import java.io.IOException;
 import java.util.*;
@@ -366,7 +366,7 @@ public class MetaData implements Iterable<IndexMetaData> {
         Map<String, Set<String>> routings = null;
         Set<String> paramRouting = null;
         // List of indices that don't require any routing
-        Set<String> norouting = new THashSet<String>();
+        Set<String> norouting = ESCollections.newSet();
         if (routing != null) {
             paramRouting = Strings.splitStringByCommaToSet(routing);
         }
@@ -383,7 +383,7 @@ public class MetaData implements Iterable<IndexMetaData> {
                             }
                             Set<String> r = routings.get(indexRouting.getKey());
                             if (r == null) {
-                                r = new THashSet<String>();
+                                r = ESCollections.newSet();
                                 routings.put(indexRouting.getKey(), r);
                             }
                             r.addAll(indexRouting.getValue());
@@ -398,7 +398,7 @@ public class MetaData implements Iterable<IndexMetaData> {
                             if (!norouting.contains(indexRouting.getKey())) {
                                 norouting.add(indexRouting.getKey());
                                 if (paramRouting != null) {
-                                    Set<String> r = new THashSet<String>(paramRouting);
+                                    Set<String> r = ESCollections.newSet(paramRouting);
                                     if (routings == null) {
                                         routings = newHashMap();
                                     }
@@ -417,7 +417,7 @@ public class MetaData implements Iterable<IndexMetaData> {
                 if (!norouting.contains(aliasOrIndex)) {
                     norouting.add(aliasOrIndex);
                     if (paramRouting != null) {
-                        Set<String> r = new THashSet<String>(paramRouting);
+                        Set<String> r = ESCollections.newSet(paramRouting);
                         if (routings == null) {
                             routings = newHashMap();
                         }
@@ -450,7 +450,7 @@ public class MetaData implements Iterable<IndexMetaData> {
             for (Map.Entry<String, ImmutableSet<String>> indexRouting : indexToRoutingMap.entrySet()) {
                 if (!indexRouting.getValue().isEmpty()) {
                     // Routing alias
-                    Set<String> r = new THashSet<String>(indexRouting.getValue());
+                    Set<String> r = ESCollections.newSet(indexRouting.getValue());
                     if (paramRouting != null) {
                         r.retainAll(paramRouting);
                     }
@@ -463,7 +463,7 @@ public class MetaData implements Iterable<IndexMetaData> {
                 } else {
                     // Non-routing alias
                     if (paramRouting != null) {
-                        Set<String> r = new THashSet<String>(paramRouting);
+                        Set<String> r = ESCollections.newSet(paramRouting);
                         if (routings == null) {
                             routings = newHashMap();
                         }
@@ -549,7 +549,7 @@ public class MetaData implements Iterable<IndexMetaData> {
             return aliasesOrIndices;
         }
 
-        Set<String> actualIndices = new THashSet<String>();
+        Set<String> actualIndices = ESCollections.newSet();
         for (String index : aliasesOrIndices) {
             String[] actualLst = aliasAndIndexToIndexMap.get(index);
             if (actualLst == null) {
@@ -598,7 +598,7 @@ public class MetaData implements Iterable<IndexMetaData> {
             } else if (aliasOrIndex.charAt(0) == '-') {
                 // if its the first, fill it with all the indices...
                 if (i == 0) {
-                    result = new THashSet<String>(Arrays.asList(wildcardOnlyOpen ? concreteAllOpenIndices() : concreteAllIndices()));
+                    result = ESCollections.newSet(Arrays.asList(wildcardOnlyOpen ? concreteAllOpenIndices() : concreteAllIndices()));
                 }
                 add = false;
                 aliasOrIndex = aliasOrIndex.substring(1);
@@ -618,7 +618,7 @@ public class MetaData implements Iterable<IndexMetaData> {
             }
             if (result == null) {
                 // add all the previous ones...
-                result = new THashSet<String>();
+                result = ESCollections.newSet();
                 result.addAll(Arrays.asList(aliasesOrIndices).subList(0, i));
             }
             String[] indices = wildcardOnlyOpen ? concreteAllOpenIndices() : concreteAllIndices();

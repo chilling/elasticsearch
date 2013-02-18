@@ -19,8 +19,9 @@
 
 package org.elasticsearch.common.io.stream;
 
-import gnu.trove.map.hash.TIntObjectHashMap;
 import org.elasticsearch.common.text.Text;
+import org.elasticsearch.util.ESCollections;
+import org.elasticsearch.util.ESCollections.IntObjectMap;
 
 import java.io.IOException;
 
@@ -29,10 +30,10 @@ import java.io.IOException;
  */
 public class HandlesStreamInput extends AdapterStreamInput {
 
-    private final TIntObjectHashMap<String> handles = new TIntObjectHashMap<String>();
-    private final TIntObjectHashMap<String> identityHandles = new TIntObjectHashMap<String>();
+    private final IntObjectMap<String> handles = ESCollections.newIntObjectMap();
+    private final IntObjectMap<String> identityHandles = ESCollections.newIntObjectMap();
 
-    private final TIntObjectHashMap<Text> handlesText = new TIntObjectHashMap<Text>();
+    private final IntObjectMap<Text> handlesText = ESCollections.newIntObjectMap();
 
     HandlesStreamInput() {
         super();

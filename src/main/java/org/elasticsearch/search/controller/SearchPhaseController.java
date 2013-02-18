@@ -23,8 +23,6 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Ordering;
-import gnu.trove.impl.Constants;
-import gnu.trove.map.TMap;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.*;
 import org.apache.lucene.util.PriorityQueue;
@@ -33,8 +31,6 @@ import org.elasticsearch.common.component.AbstractComponent;
 import org.elasticsearch.common.inject.Inject;
 import org.elasticsearch.common.lucene.search.ShardFieldDocSortedHitQueue;
 import org.elasticsearch.common.settings.Settings;
-import org.elasticsearch.common.trove.ExtTHashMap;
-import org.elasticsearch.common.trove.ExtTIntArrayList;
 import org.elasticsearch.search.SearchShardTarget;
 import org.elasticsearch.search.dfs.AggregatedDfs;
 import org.elasticsearch.search.dfs.DfsSearchResult;
@@ -49,6 +45,8 @@ import org.elasticsearch.search.internal.InternalSearchResponse;
 import org.elasticsearch.search.query.QuerySearchResult;
 import org.elasticsearch.search.query.QuerySearchResultProvider;
 import org.elasticsearch.search.suggest.Suggest;
+import org.elasticsearch.util.ESCollections;
+import org.elasticsearch.util.ESCollections.IntList;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -86,8 +84,8 @@ public class SearchPhaseController extends AbstractComponent {
     }
 
     public AggregatedDfs aggregateDfs(Iterable<DfsSearchResult> results) {
-        TMap<Term, TermStatistics> termStatistics = new ExtTHashMap<Term, TermStatistics>(Constants.DEFAULT_CAPACITY, Constants.DEFAULT_LOAD_FACTOR);
-        TMap<String, CollectionStatistics> fieldStatistics = new ExtTHashMap<String, CollectionStatistics>(Constants.DEFAULT_CAPACITY, Constants.DEFAULT_LOAD_FACTOR);
+        Map<Term, TermStatistics> termStatistics = ESCollections.newMap();
+        Map<String, CollectionStatistics> fieldStatistics = ESCollections.newMap();
         long aggMaxDoc = 0;
         for (DfsSearchResult result : results) {
             for (int i = 0; i < result.termStatistics().length; i++) {
@@ -262,15 +260,15 @@ public class SearchPhaseController extends AbstractComponent {
         return shardDocs;
     }
 
-    public Map<SearchShardTarget, ExtTIntArrayList> docIdsToLoad(ShardDoc[] shardDocs) {
-        Map<SearchShardTarget, ExtTIntArrayList> result = Maps.newHashMap();
+    public Map<SearchShardTarget, IntList> docIdsToLoad(ShardDoc[] shardDocs) {
+        Map<SearchShardTarget, IntList> result = Maps.newHashMap();
         for (ShardDoc shardDoc : shardDocs) {
-            ExtTIntArrayList list = result.get(shardDoc.shardTarget());
+            IntList list = result.get(shardDoc.shardTarget());
             if (list == null) {
-                list = new ExtTIntArrayList(); // can't be shared!, uses unsafe on it later on
+                list = ESCollections.newIntList(); // can't be shared!, uses unsafe on it later on
                 result.put(shardDoc.shardTarget(), list);
             }
-            list.add(shardDoc.docId());
+            list.addX(shardDoc.docId());
         }
         return result;
     }

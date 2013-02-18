@@ -19,7 +19,6 @@
 
 package org.elasticsearch.index.query;
 
-import gnu.trove.list.array.TFloatArrayList;
 import org.apache.lucene.search.Filter;
 import org.apache.lucene.search.Query;
 import org.elasticsearch.common.Strings;
@@ -29,6 +28,8 @@ import org.elasticsearch.common.lucene.search.function.FiltersFunctionScoreQuery
 import org.elasticsearch.common.lucene.search.function.ScoreFunction;
 import org.elasticsearch.common.xcontent.XContentParser;
 import org.elasticsearch.script.SearchScript;
+import org.elasticsearch.util.ESCollections;
+import org.elasticsearch.util.ESCollections.FloatList;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -64,7 +65,7 @@ public class CustomFiltersScoreQueryParser implements QueryParser {
         ArrayList<Filter> filters = new ArrayList<Filter>();
         boolean filtersFound = false;
         ArrayList<String> scripts = new ArrayList<String>();
-        TFloatArrayList boosts = new TFloatArrayList();
+        FloatList boosts = ESCollections.newFloatList();
         float maxBoost = Float.MAX_VALUE;
 
         String currentFieldName = null;
@@ -114,7 +115,7 @@ public class CustomFiltersScoreQueryParser implements QueryParser {
                         if (filter != null) {
                             filters.add(filter);
                             scripts.add(script);
-                            boosts.add(fboost);
+                            boosts.addX(fboost);
                         }
                     }
                 } else {

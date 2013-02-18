@@ -24,7 +24,6 @@ import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.RemovalListener;
 import com.google.common.cache.RemovalNotification;
-import gnu.trove.set.hash.THashSet;
 import org.apache.lucene.search.DocIdSet;
 import org.elasticsearch.cluster.metadata.MetaData;
 import org.elasticsearch.common.CacheRecycler;
@@ -175,7 +174,7 @@ public class IndicesFilterCache extends AbstractComponent implements RemovalList
             threadPool.executor(ThreadPool.Names.GENERIC).execute(new Runnable() {
                 @Override
                 public void run() {
-                    THashSet<Object> keys = CacheRecycler.popHashSet();
+                    Set<Object> keys = CacheRecycler.popHashSet();
                     try {
                         for (Iterator<Object> it = readersKeysToClean.iterator(); it.hasNext(); ) {
                             keys.add(it.next());

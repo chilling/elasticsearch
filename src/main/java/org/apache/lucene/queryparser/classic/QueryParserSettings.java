@@ -19,10 +19,10 @@
 
 package org.apache.lucene.queryparser.classic;
 
-import gnu.trove.map.hash.TObjectFloatHashMap;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.search.FuzzyQuery;
 import org.apache.lucene.search.MultiTermQuery;
+import org.elasticsearch.util.ESCollections.ObjectFloatMap;
 
 import java.util.Collection;
 import java.util.List;
@@ -62,7 +62,7 @@ public class QueryParserSettings {
 
     List<String> fields = null;
     Collection<String> queryTypes = null;
-    TObjectFloatHashMap<String> boosts = null;
+    ObjectFloatMap<String> boosts = null;
     float tieBreaker = 0.0f;
     boolean useDisMax = true;
 
@@ -266,11 +266,11 @@ public class QueryParserSettings {
         this.queryTypes = queryTypes;
     }
 
-    public TObjectFloatHashMap<String> boosts() {
+    public ObjectFloatMap<String> boosts() {
         return boosts;
     }
 
-    public void boosts(TObjectFloatHashMap<String> boosts) {
+    public void boosts(ObjectFloatMap<String> boosts) {
         this.boosts = boosts;
     }
 

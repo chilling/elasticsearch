@@ -28,7 +28,6 @@ import org.elasticsearch.common.collect.Tuple;
 import org.elasticsearch.common.component.AbstractComponent;
 import org.elasticsearch.common.inject.Inject;
 import org.elasticsearch.common.settings.Settings;
-import org.elasticsearch.common.trove.ExtTIntArrayList;
 import org.elasticsearch.common.util.concurrent.ConcurrentCollections;
 import org.elasticsearch.search.SearchShardTarget;
 import org.elasticsearch.search.action.SearchServiceListener;
@@ -41,6 +40,7 @@ import org.elasticsearch.search.internal.InternalSearchResponse;
 import org.elasticsearch.search.query.QuerySearchResult;
 import org.elasticsearch.search.query.QuerySearchResultProvider;
 import org.elasticsearch.threadpool.ThreadPool;
+import org.elasticsearch.util.ESCollections.IntList;
 
 import java.util.Map;
 import java.util.Queue;
@@ -213,7 +213,7 @@ public class TransportSearchScrollQueryThenFetchAction extends AbstractComponent
 
         private void executeFetchPhase() {
             sortedShardList = searchPhaseController.sortDocs(queryResults.values());
-            Map<SearchShardTarget, ExtTIntArrayList> docIdsToLoad = searchPhaseController.docIdsToLoad(sortedShardList);
+            Map<SearchShardTarget, IntList> docIdsToLoad = searchPhaseController.docIdsToLoad(sortedShardList);
 
             if (docIdsToLoad.isEmpty()) {
                 finishHim();
@@ -221,9 +221,9 @@ public class TransportSearchScrollQueryThenFetchAction extends AbstractComponent
 
             final AtomicInteger counter = new AtomicInteger(docIdsToLoad.size());
 
-            for (final Map.Entry<SearchShardTarget, ExtTIntArrayList> entry : docIdsToLoad.entrySet()) {
+            for (final Map.Entry<SearchShardTarget, IntList> entry : docIdsToLoad.entrySet()) {
                 SearchShardTarget shardTarget = entry.getKey();
-                ExtTIntArrayList docIds = entry.getValue();
+                IntList docIds = entry.getValue();
                 FetchSearchRequest fetchSearchRequest = new FetchSearchRequest(request, queryResults.get(shardTarget).id(), docIds);
                 DiscoveryNode node = nodes.get(shardTarget.nodeId());
                 searchService.sendExecuteFetch(node, fetchSearchRequest, new SearchServiceListener<FetchSearchResult>() {

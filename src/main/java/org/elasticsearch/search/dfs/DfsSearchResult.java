@@ -19,17 +19,16 @@
 
 package org.elasticsearch.search.dfs;
 
-import gnu.trove.map.TMap;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.CollectionStatistics;
 import org.apache.lucene.search.TermStatistics;
 import org.apache.lucene.util.BytesRef;
 import org.elasticsearch.common.io.stream.StreamInput;
 import org.elasticsearch.common.io.stream.StreamOutput;
-import org.elasticsearch.common.trove.ExtTHashMap;
 import org.elasticsearch.search.SearchPhaseResult;
 import org.elasticsearch.search.SearchShardTarget;
 import org.elasticsearch.transport.TransportResponse;
+import org.elasticsearch.util.ESCollections;
 
 import java.io.IOException;
 import java.util.Map;
@@ -46,7 +45,7 @@ public class DfsSearchResult extends TransportResponse implements SearchPhaseRes
     private long id;
     private Term[] terms;
     private TermStatistics[] termStatistics;
-    private TMap<String, CollectionStatistics> fieldStatistics = new ExtTHashMap<String, CollectionStatistics>();
+    private Map<String, CollectionStatistics> fieldStatistics = ESCollections.newMap();
     private int maxDoc;
 
     public DfsSearchResult() {
@@ -86,7 +85,7 @@ public class DfsSearchResult extends TransportResponse implements SearchPhaseRes
         return this;
     }
 
-    public DfsSearchResult fieldStatistics(TMap<String, CollectionStatistics> fieldStatistics) {
+    public DfsSearchResult fieldStatistics(Map<String, CollectionStatistics> fieldStatistics) {
         this.fieldStatistics = fieldStatistics;
         return this;
     }
@@ -99,7 +98,7 @@ public class DfsSearchResult extends TransportResponse implements SearchPhaseRes
         return termStatistics;
     }
 
-    public TMap<String, CollectionStatistics> fieldStatistics() {
+    public Map<String, CollectionStatistics> fieldStatistics() {
         return fieldStatistics;
     }
 

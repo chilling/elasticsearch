@@ -19,12 +19,13 @@
 
 package org.elasticsearch.cluster.routing;
 
-import gnu.trove.map.hash.TObjectIntHashMap;
 import org.elasticsearch.cluster.ClusterState;
 import org.elasticsearch.cluster.block.ClusterBlocks;
 import org.elasticsearch.cluster.metadata.IndexMetaData;
 import org.elasticsearch.cluster.metadata.MetaData;
 import org.elasticsearch.cluster.node.DiscoveryNode;
+import org.elasticsearch.util.ESCollections;
+import org.elasticsearch.util.ESCollections.ObjectIntMap;
 
 import java.util.*;
 
@@ -49,7 +50,7 @@ public class RoutingNodes implements Iterable<RoutingNode> {
 
     private final List<MutableShardRouting> ignoredUnassigned = newArrayList();
 
-    private final Map<String, TObjectIntHashMap<String>> nodesPerAttributeNames = new HashMap<String, TObjectIntHashMap<String>>();
+    private final Map<String, ObjectIntMap<String>> nodesPerAttributeNames = new HashMap<String, ObjectIntMap<String>>();
 
     public RoutingNodes(ClusterState clusterState) {
         this.metaData = clusterState.metaData();
@@ -163,12 +164,12 @@ public class RoutingNodes implements Iterable<RoutingNode> {
         return nodesToShards.get(nodeId);
     }
 
-    public TObjectIntHashMap<String> nodesPerAttributesCounts(String attributeName) {
-        TObjectIntHashMap<String> nodesPerAttributesCounts = nodesPerAttributeNames.get(attributeName);
+    public ObjectIntMap<String> nodesPerAttributesCounts(String attributeName) {
+        ObjectIntMap<String> nodesPerAttributesCounts = nodesPerAttributeNames.get(attributeName);
         if (nodesPerAttributesCounts != null) {
             return nodesPerAttributesCounts;
         }
-        nodesPerAttributesCounts = new TObjectIntHashMap<String>();
+        nodesPerAttributesCounts = ESCollections.newObjectIntMap();
         for (RoutingNode routingNode : this) {
             String attrValue = routingNode.node().attributes().get(attributeName);
             nodesPerAttributesCounts.adjustOrPutValue(attrValue, 1, 1);

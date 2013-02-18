@@ -783,7 +783,7 @@ public class MapperQueryParser extends QueryParser {
 
     private void applyBoost(String field, Query q) {
         if (settings.boosts() != null) {
-            float boost = settings.boosts().get(field);
+            float boost = settings.boosts().getX(field);
             q.setBoost(boost);
         }
     }

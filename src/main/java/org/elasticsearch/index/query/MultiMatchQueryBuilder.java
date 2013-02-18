@@ -20,9 +20,10 @@
 package org.elasticsearch.index.query;
 
 import com.google.common.collect.Lists;
-import gnu.trove.impl.Constants;
-import gnu.trove.map.hash.TObjectFloatHashMap;
 import org.elasticsearch.common.xcontent.XContentBuilder;
+import org.elasticsearch.util.ESCollections;
+import org.elasticsearch.util.ESCollections.Constants;
+import org.elasticsearch.util.ESCollections.ObjectFloatMap;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -37,7 +38,7 @@ public class MultiMatchQueryBuilder extends BaseQueryBuilder implements Boostabl
     private final Object text;
 
     private final List<String> fields;
-    private TObjectFloatHashMap<String> fieldsBoosts;
+    private ObjectFloatMap<String> fieldsBoosts;
 
     private MatchQueryBuilder.Type type;
 
@@ -92,7 +93,7 @@ public class MultiMatchQueryBuilder extends BaseQueryBuilder implements Boostabl
     public MultiMatchQueryBuilder field(String field, float boost) {
         fields.add(field);
         if (fieldsBoosts == null) {
-            fieldsBoosts = new TObjectFloatHashMap<String>(Constants.DEFAULT_CAPACITY, Constants.DEFAULT_LOAD_FACTOR, -1);
+            fieldsBoosts = ESCollections.newObjectFloatMap(Constants.DEFAULT_CAPACITY, Constants.DEFAULT_LOAD_FACTOR, -1);
         }
         fieldsBoosts.put(field, boost);
         return this;
@@ -214,7 +215,7 @@ public class MultiMatchQueryBuilder extends BaseQueryBuilder implements Boostabl
         for (String field : fields) {
             float boost = -1;
             if (fieldsBoosts != null) {
-                boost = fieldsBoosts.get(field);
+                boost = fieldsBoosts.getX(field);
             }
             if (boost != -1) {
                 field += "^" + boost;

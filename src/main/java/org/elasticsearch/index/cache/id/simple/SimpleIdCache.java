@@ -19,7 +19,6 @@
 
 package org.elasticsearch.index.cache.id.simple;
 
-import gnu.trove.impl.Constants;
 import org.apache.lucene.index.*;
 import org.apache.lucene.util.BytesRef;
 import org.elasticsearch.ElasticSearchException;
@@ -37,6 +36,9 @@ import org.elasticsearch.index.mapper.Uid;
 import org.elasticsearch.index.mapper.internal.ParentFieldMapper;
 import org.elasticsearch.index.mapper.internal.UidFieldMapper;
 import org.elasticsearch.index.settings.IndexSettings;
+import org.elasticsearch.util.ESCollections;
+import org.elasticsearch.util.ESCollections.Constants;
+import org.elasticsearch.util.ESCollections.ObjectIntMap;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentMap;
@@ -239,7 +241,7 @@ public class SimpleIdCache extends AbstractIndexComponent implements IdCache, Se
     }
 
     static class TypeBuilder {
-        final ExtTObjectIntHasMap<HashedBytesArray> idToDoc = new ExtTObjectIntHasMap<HashedBytesArray>(Constants.DEFAULT_CAPACITY, Constants.DEFAULT_LOAD_FACTOR, -1);
+        final ObjectIntMap<HashedBytesArray> idToDoc = ESCollections.newObjectIntMap(Constants.DEFAULT_CAPACITY, Constants.DEFAULT_LOAD_FACTOR, -1);
         final HashedBytesArray[] docToId;
         final ArrayList<HashedBytesArray> parentIdsValues = new ArrayList<HashedBytesArray>();
         final int[] parentIdsOrdinals;

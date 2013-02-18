@@ -19,7 +19,6 @@
 
 package org.elasticsearch.test.integration.cluster.allocation;
 
-import gnu.trove.map.hash.TObjectIntHashMap;
 import org.elasticsearch.action.admin.cluster.health.ClusterHealthResponse;
 import org.elasticsearch.cluster.ClusterState;
 import org.elasticsearch.cluster.routing.IndexRoutingTable;
@@ -30,6 +29,8 @@ import org.elasticsearch.common.logging.Loggers;
 import org.elasticsearch.common.settings.ImmutableSettings;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.test.integration.AbstractNodesTests;
+import org.elasticsearch.util.ESCollections;
+import org.elasticsearch.util.ESCollections.ObjectIntMap;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.Test;
 
@@ -70,7 +71,7 @@ public class AwarenessAllocationTests extends AbstractNodesTests {
         startNode("node3", ImmutableSettings.settingsBuilder().put(commonSettings).put("node.rack_id", "rack_2"));
 
         long start = System.currentTimeMillis();
-        TObjectIntHashMap<String> counts;
+        ObjectIntMap<String> counts;
         // On slow machines the initial relocation might be delayed
         do {
             Thread.sleep(100);
@@ -78,11 +79,12 @@ public class AwarenessAllocationTests extends AbstractNodesTests {
             health = client("node1").admin().cluster().prepareHealth().setWaitForGreenStatus().setWaitForNodes("3").setWaitForRelocatingShards(0).execute().actionGet();
             assertThat(health.isTimedOut(), equalTo(false));
 
+<<<<<<< HEAD
             logger.info("--> checking current state");
             ClusterState clusterState = client("node1").admin().cluster().prepareState().execute().actionGet().getState();
             //System.out.println(clusterState.routingTable().prettyPrint());
             // verify that we have 10 shards on node3
-            counts = new TObjectIntHashMap<String>();
+            counts = ESCollections.newObjectIntMap();
             for (IndexRoutingTable indexRoutingTable : clusterState.routingTable()) {
                 for (IndexShardRoutingTable indexShardRoutingTable : indexRoutingTable) {
                     for (ShardRouting shardRouting : indexShardRoutingTable) {
