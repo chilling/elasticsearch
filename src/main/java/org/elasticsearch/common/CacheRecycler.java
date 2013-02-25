@@ -19,21 +19,13 @@
 
 package org.elasticsearch.common;
 
-
 import org.elasticsearch.common.util.concurrent.ConcurrentCollections;
-import org.elasticsearch.util.ESCollections;
-import org.elasticsearch.util.ESCollections.ByteIntMap;
-import org.elasticsearch.util.ESCollections.DoubleIntMap;
-import org.elasticsearch.util.ESCollections.DoubleObjectMap;
-import org.elasticsearch.util.ESCollections.FloatIntMap;
-import org.elasticsearch.util.ESCollections.IntIntMap;
-import org.elasticsearch.util.ESCollections.IntObjectMap;
-import org.elasticsearch.util.ESCollections.LongIntMap;
-import org.elasticsearch.util.ESCollections.LongLongMap;
-import org.elasticsearch.util.ESCollections.LongObjectMap;
-import org.elasticsearch.util.ESCollections.ObjectFloatMap;
-import org.elasticsearch.util.ESCollections.ObjectIntMap;
-import org.elasticsearch.util.ESCollections.ShortIntMap;
+import org.elasticsearch.util.collections.hppc.BaseMapImpl;
+import org.elasticsearch.util.collections.hppc.BaseSetImpl;
+
+import com.carrotsearch.hppc.*;
+
+import com.carrotsearch.hppc.ObjectOpenHashSet;
 
 import java.lang.ref.SoftReference;
 import java.util.Arrays;
@@ -94,7 +86,7 @@ public class CacheRecycler {
         }
         Map map = ref.poll();
         if (map == null) {
-            return ESCollections.newMap();
+            return new HashMap<K, V>();
         }
         return map;
     }
@@ -117,11 +109,11 @@ public class CacheRecycler {
     public static <T> Set<T> popHashSet() {
         Queue<Set<?>> ref = hashSet.get();
         if (ref == null) {
-            return ESCollections.newSet();
+            return new BaseSetImpl<T>();
         }
         Set set = ref.poll();
         if (set == null) {
-            return ESCollections.newSet();
+            return new BaseSetImpl<T>();
         }
         return set;
     }
@@ -144,11 +136,11 @@ public class CacheRecycler {
     public static <T> DoubleObjectMap<T> popDoubleObjectMap() {
         Queue<DoubleObjectMap<?>> ref = DoubleObjectMap.get();
         if (ref == null) {
-            return ESCollections.newDoubleObjectMap();
+            return new DoubleObjectOpenHashMap<T>();
         }
         DoubleObjectMap map = ref.poll();
         if (map == null) {
-            return ESCollections.newDoubleObjectMap();
+            return new DoubleObjectOpenHashMap<T>();
         }
         return map;
     }
@@ -171,16 +163,16 @@ public class CacheRecycler {
     public static <T> LongObjectMap<T> popLongObjectMap() {
         Queue<LongObjectMap<?>> ref = LongObjectMap.get();
         if (ref == null) {
-            return ESCollections.newLongObjectMap();
+            return new LongObjectOpenHashMap<T>();
         }
         LongObjectMap map = ref.poll();
         if (map == null) {
-            return ESCollections.newLongObjectMap();
+            return new LongObjectOpenHashMap<T>();
         }
         return map;
     }
 
-    public static void pushLongObjectMap(LongObjectMap map) {
+    public static void pushLongObjectMap(LongObjectMap<?> map) {
         Queue<LongObjectMap<?>> ref = LongObjectMap.get();
         if (ref == null) {
             ref = ConcurrentCollections.newQueue();
@@ -197,11 +189,11 @@ public class CacheRecycler {
     public static LongLongMap popLongLongMap() {
         Queue<LongLongMap> ref = LongLongMap.get();
         if (ref == null) {
-            return ESCollections.newLongLongMap();
+            return new LongLongOpenHashMap();
         }
         LongLongMap map = ref.poll();
         if (map == null) {
-            return ESCollections.newLongLongMap();
+            return new LongLongOpenHashMap();
         }
         return map;
     }
@@ -224,11 +216,11 @@ public class CacheRecycler {
     public static IntIntMap popIntIntMap() {
         Queue<IntIntMap> ref = IntIntMap.get();
         if (ref == null) {
-            return ESCollections.newIntIntMap();
+            return new IntIntOpenHashMap();
         }
         IntIntMap map = ref.poll();
         if (map == null) {
-            return ESCollections.newIntIntMap();
+            return new IntIntOpenHashMap();
         }
         return map;
     }
@@ -252,11 +244,11 @@ public class CacheRecycler {
     public static FloatIntMap popFloatIntMap() {
         Queue<FloatIntMap> ref = FloatIntMap.get();
         if (ref == null) {
-            return ESCollections.newFloatIntMap();
+            return new FloatIntOpenHashMap();
         }
         FloatIntMap map = ref.poll();
         if (map == null) {
-            return ESCollections.newFloatIntMap();
+            return new FloatIntOpenHashMap();
         }
         return map;
     }
@@ -280,11 +272,11 @@ public class CacheRecycler {
     public static DoubleIntMap popDoubleIntMap() {
         Queue<DoubleIntMap> ref = DoubleIntMap.get();
         if (ref == null) {
-            return ESCollections.newDoubleIntMap();
+            return new DoubleIntOpenHashMap();
         }
         DoubleIntMap map = ref.poll();
         if (map == null) {
-            return ESCollections.newDoubleIntMap();
+            return new DoubleIntOpenHashMap();
         }
         return map;
     }

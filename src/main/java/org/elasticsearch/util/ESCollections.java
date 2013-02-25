@@ -79,134 +79,134 @@ public abstract class ESCollections {
         public abstract LongList newLongList();
     }
     
-    public static <E> Set<E> newSet() {
-        return Constants.IMPLEMENTATION.newSet();
-    }
-
-    public static <E> Set<E> newSet(int capacity) {
-        return Constants.IMPLEMENTATION.newSet(capacity);
-    }
-    
-    public static <E> Set<E> newSet(Collection<E> init) {
-        return Constants.IMPLEMENTATION.newSet(init);
-    }
-
-    public static <K, V> Map<K, V> newMap() {
-        return Constants.IMPLEMENTATION.newMap();
-    }
-    
-    public static <K, V> Map<K, V> newMap(int initialCapacity, float loadFactor) {
-        return Constants.IMPLEMENTATION.newMap(initialCapacity, loadFactor);
-    }
-    
-    public static <E> ObjectIntMap<E> newObjectIntMap() {
-        return Constants.IMPLEMENTATION.newObjectIntMap();
-    }
-
-    public static <E> ObjectIntMap<E> newObjectIntMap(int initialCpacity, float loadFactor, int noEntryValue) {
-        return Constants.IMPLEMENTATION.newObjectIntMap(initialCpacity, loadFactor, noEntryValue);
-    }
-    
-    public static <E> ObjectFloatMap<E> newObjectFloatMap() {
-        return Constants.IMPLEMENTATION.newObjectFloatMap();
-    }
-    
-    public static <E> ObjectFloatMap<E> newObjectFloatMap(int initialCpacity, float loadFactor, float noEntryValue) {
-        return Constants.IMPLEMENTATION.newObjectFloatMap(initialCpacity, loadFactor, noEntryValue);
-    }
-    
-    public static <E> ObjectLongMap<E> newObjectLongMap() {
-        return Constants.IMPLEMENTATION.newObjectLongMap();
-    }
-    
-    public static IntSet newIntSet() {
-        return Constants.IMPLEMENTATION.newIntSet();
-    }
-    
-    public static IntSet newIntSet(int[] init) {
-        return Constants.IMPLEMENTATION.newIntSet(init);
-    }
-    
-    public static IntIntMap newIntIntMap() {
-        return Constants.IMPLEMENTATION.newIntIntMap();
-    }
-
-    public static <E> IntObjectMap<E> newIntObjectMap() {
-        return Constants.IMPLEMENTATION.newIntObjectMap();
-    }
-
-    public static FloatIntMap newFloatIntMap() {
-        return Constants.IMPLEMENTATION.newFloatIntMap();
-    }
-
-    public static <E> FloatObjectMap<E> newFloatObjectMap() {
-        return Constants.IMPLEMENTATION.newFloatObjectMap();
-    }
-
-    public static LongIntMap newLongIntMap() {
-        return Constants.IMPLEMENTATION.newLongIntMap();
-    }
-    
-    public static <E> LongObjectMap<E> newLongObjectMap() {
-        return Constants.IMPLEMENTATION.newLongObjectMap();
-    }
-    
-    public static DoubleIntMap newDoubleIntMap() {
-        return Constants.IMPLEMENTATION.newDoubleIntMap();
-    }
-    
-    public static <E> DoubleObjectMap<E> newDoubleObjectMap() {
-        return Constants.IMPLEMENTATION.newDoubleObjectMap();
-    }
-
-    public static LongLongMap newLongLongMap() {
-        return Constants.IMPLEMENTATION.newLongLongMap();
-    }
-    
-    public static ByteIntMap newByteIntMap() {
-        return Constants.IMPLEMENTATION.newByteIntMap();
-    }
-    
-    public static CharSet newCharSet() {
-        return Constants.IMPLEMENTATION.newCharSet();
-    }
-
-    public static CharSet newCharSet(char[] chars) {
-        return Constants.IMPLEMENTATION.newCharSet(chars);
-    }
-    
-    public static ByteList newByteList() {
-        return Constants.IMPLEMENTATION.newByteList();
-    }
-    
-    public static ShortList newShortList() {
-        return Constants.IMPLEMENTATION.newShortList();
-    }
-    
-    public static IntList newIntList() {
-        return Constants.IMPLEMENTATION.newIntList();
-    }
-
-    public static IntList newIntList(int capacity) {
-        return Constants.IMPLEMENTATION.newIntList(capacity);
-    }
-    
-    public static FloatList newFloatList() {
-        return Constants.IMPLEMENTATION.newFloatList();
-    }
-    
-    public static DoubleList newDoubleList() {
-        return Constants.IMPLEMENTATION.newDoubleList();
-    }
-
-    public static LongList newLongList() {
-        return Constants.IMPLEMENTATION.newLongList();
-    }
-
-    public static ShortIntMap newShortIntMap() {
-        return Constants.IMPLEMENTATION.newShortIntMap();
-    }
-    
+//    public static <E> Set<E> newSet() {
+//        return Constants.IMPLEMENTATION.newSet();
+//    }
+//
+//    public static <E> Set<E> newSet(int capacity) {
+//        return Constants.IMPLEMENTATION.newSet(capacity);
+//    }
+//    
+//    public static <E> Set<E> newSet(Collection<E> init) {
+//        return Constants.IMPLEMENTATION.newSet(init);
+//    }
+//
+//    public static <K, V> Map<K, V> newMap() {
+//        return Constants.IMPLEMENTATION.newMap();
+//    }
+//    
+//    public static <K, V> Map<K, V> newMap(int initialCapacity, float loadFactor) {
+//        return Constants.IMPLEMENTATION.newMap(initialCapacity, loadFactor);
+//    }
+//    
+//    public static <E> ObjectIntMap<E> newObjectIntMap() {
+//        return Constants.IMPLEMENTATION.newObjectIntMap();
+//    }
+//
+//    public static <E> ObjectIntMap<E> newObjectIntMap(int initialCpacity, float loadFactor, int noEntryValue) {
+//        return Constants.IMPLEMENTATION.newObjectIntMap(initialCpacity, loadFactor, noEntryValue);
+//    }
+//    
+//    public static <E> ObjectFloatMap<E> newObjectFloatMap() {
+//        return Constants.IMPLEMENTATION.newObjectFloatMap();
+//    }
+//    
+//    public static <E> ObjectFloatMap<E> newObjectFloatMap(int initialCpacity, float loadFactor, float noEntryValue) {
+//        return Constants.IMPLEMENTATION.newObjectFloatMap(initialCpacity, loadFactor, noEntryValue);
+//    }
+//    
+//    public static <E> ObjectLongMap<E> newObjectLongMap() {
+//        return Constants.IMPLEMENTATION.newObjectLongMap();
+//    }
+//    
+//    public static IntSet newIntSet() {
+//        return Constants.IMPLEMENTATION.newIntSet();
+//    }
+//    
+//    public static IntSet newIntSet(int[] init) {
+//        return Constants.IMPLEMENTATION.newIntSet(init);
+//    }
+//    
+//    public static IntIntMap newIntIntMap() {
+//        return Constants.IMPLEMENTATION.newIntIntMap();
+//    }
+//
+//    public static <E> IntObjectMap<E> newIntObjectMap() {
+//        return Constants.IMPLEMENTATION.newIntObjectMap();
+//    }
+//
+//    public static FloatIntMap newFloatIntMap() {
+//        return Constants.IMPLEMENTATION.newFloatIntMap();
+//    }
+//
+//    public static <E> FloatObjectMap<E> newFloatObjectMap() {
+//        return Constants.IMPLEMENTATION.newFloatObjectMap();
+//    }
+//
+//    public static LongIntMap newLongIntMap() {
+//        return Constants.IMPLEMENTATION.newLongIntMap();
+//    }
+//    
+//    public static <E> LongObjectMap<E> newLongObjectMap() {
+//        return Constants.IMPLEMENTATION.newLongObjectMap();
+//    }
+//    
+//    public static DoubleIntMap newDoubleIntMap() {
+//        return Constants.IMPLEMENTATION.newDoubleIntMap();
+//    }
+//    
+//    public static <E> DoubleObjectMap<E> newDoubleObjectMap() {
+//        return Constants.IMPLEMENTATION.newDoubleObjectMap();
+//    }
+//
+//    public static LongLongMap newLongLongMap() {
+//        return Constants.IMPLEMENTATION.newLongLongMap();
+//    }
+//    
+//    public static ByteIntMap newByteIntMap() {
+//        return Constants.IMPLEMENTATION.newByteIntMap();
+//    }
+//    
+//    public static CharSet newCharSet() {
+//        return Constants.IMPLEMENTATION.newCharSet();
+//    }
+//
+//    public static CharSet newCharSet(char[] chars) {
+//        return Constants.IMPLEMENTATION.newCharSet(chars);
+//    }
+//    
+//    public static ByteList newByteList() {
+//        return Constants.IMPLEMENTATION.newByteList();
+//    }
+//    
+//    public static ShortList newShortList() {
+//        return Constants.IMPLEMENTATION.newShortList();
+//    }
+//    
+//    public static IntList newIntList() {
+//        return Constants.IMPLEMENTATION.newIntList();
+//    }
+//
+//    public static IntList newIntList(int capacity) {
+//        return Constants.IMPLEMENTATION.newIntList(capacity);
+//    }
+//    
+//    public static FloatList newFloatList() {
+//        return Constants.IMPLEMENTATION.newFloatList();
+//    }
+//    
+//    public static DoubleList newDoubleList() {
+//        return Constants.IMPLEMENTATION.newDoubleList();
+//    }
+//
+//    public static LongList newLongList() {
+//        return Constants.IMPLEMENTATION.newLongList();
+//    }
+//
+//    public static ShortIntMap newShortIntMap() {
+//        return Constants.IMPLEMENTATION.newShortIntMap();
+//    }
+//    
     private static interface PrimCollection {
         public int size();
         public void clear();
