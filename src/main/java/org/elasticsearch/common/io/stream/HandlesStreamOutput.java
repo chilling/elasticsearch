@@ -25,6 +25,8 @@ import org.elasticsearch.util.ESCollections;
 import org.elasticsearch.util.ESCollections.Constants;
 import org.elasticsearch.util.ESCollections.ObjectIntMap;
 
+import com.carrotsearch.hppc.ObjectIntOpenHashMap;
+
 import java.io.IOException;
 import java.util.Arrays;
 
@@ -38,10 +40,10 @@ public class HandlesStreamOutput extends AdapterStreamOutput {
     // a threshold above which strings will use identity check
     private final int identityThreshold;
 
-    private final ObjectIntMap<String> handles = ESCollections.newObjectIntMap(Constants.DEFAULT_CAPACITY, Constants.DEFAULT_LOAD_FACTOR, -1);
+    private final ObjectIntOpenHashMap<String> handles = new ObjectIntOpenHashMap<String>(Constants.DEFAULT_CAPACITY, Constants.DEFAULT_LOAD_FACTOR);
     private final HandleTable identityHandles = new HandleTable(10, (float) 3.00);
 
-    private final ObjectIntMap<Text> handlesText = ESCollections.newObjectIntMap(Constants.DEFAULT_CAPACITY, Constants.DEFAULT_LOAD_FACTOR, -1);
+    private final ObjectIntOpenHashMap<Text> handlesText = new ObjectIntOpenHashMap<Text>(Constants.DEFAULT_CAPACITY, Constants.DEFAULT_LOAD_FACTOR);
 
     public HandlesStreamOutput(StreamOutput out) {
         this(out, DEFAULT_IDENTITY_THRESHOLD);
@@ -55,14 +57,14 @@ public class HandlesStreamOutput extends AdapterStreamOutput {
     @Override
     public void writeString(String s) throws IOException {
         if (s.length() < identityThreshold) {
-            int handle = handles.getX(s);
-            if (handle == -1) {
-                handle = handles.size();
+            if (!handles.containsKey(s)) {
+                int handle = handles.size();
                 handles.put(s, handle);
                 out.writeByte((byte) 0);
                 out.writeVInt(handle);
                 out.writeString(s);
             } else {
+                int handle = handles.get(s);
                 out.writeByte((byte) 1);
                 out.writeVInt(handle);
             }
@@ -89,14 +91,14 @@ public class HandlesStreamOutput extends AdapterStreamOutput {
             length = text.string().length();
         }
         if (length < identityThreshold) {
-            int handle = handlesText.getX(text);
-            if (handle == -1) {
-                handle = handlesText.size();
+            if (!handlesText.containsKey(text)) {
+                int handle = handlesText.size();
                 handlesText.put(text, handle);
                 out.writeByte((byte) 0);
                 out.writeVInt(handle);
                 out.writeText(text);
             } else {
+                int handle = handlesText.lget();
                 out.writeByte((byte) 1);
                 out.writeVInt(handle);
             }

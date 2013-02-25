@@ -38,8 +38,8 @@ import org.elasticsearch.index.fielddata.ordinals.Ordinals.Docs;
 import org.elasticsearch.index.fielddata.ordinals.OrdinalsBuilder;
 import org.elasticsearch.index.mapper.FieldMapper;
 import org.elasticsearch.index.settings.IndexSettings;
-import org.elasticsearch.util.ESCollections;
-import org.elasticsearch.util.ESCollections.ByteList;
+
+import com.carrotsearch.hppc.ByteArrayList;
 
 /**
  */
@@ -90,14 +90,14 @@ public class ByteArrayIndexFieldData extends AbstractIndexFieldData<ByteArrayAto
             return ByteArrayAtomicFieldData.EMPTY;
         }
         // TODO: how can we guess the number of terms? numerics end up creating more terms per value...
-        final ByteList values = ESCollections.newByteList();
+        final ByteArrayList values = new ByteArrayList();
 
-        values.addX((byte) 0); // first "t" indicates null value
+        values.add((byte) 0); // first "t" indicates null value
         OrdinalsBuilder builder = new OrdinalsBuilder(terms, reader.maxDoc());
         BytesRefIterator iter = builder.buildFromTerms(builder.wrapNumeric32Bit(terms.iterator(null)), reader.getLiveDocs());
         BytesRef term;
         while ((term = iter.next()) != null) {
-            values.addX((byte) NumericUtils.prefixCodedToInt(term));
+            values.add((byte) NumericUtils.prefixCodedToInt(term));
         }
         try {
             Ordinals build = builder.build(fieldDataType.getSettings());
@@ -116,7 +116,7 @@ public class ByteArrayIndexFieldData extends AbstractIndexFieldData<ByteArrayAto
                 }
             } else {
                 return new ByteArrayAtomicFieldData.WithOrdinals(
-                        values.toArray(new byte[values.size()]),
+                        values.toArray(),
                         reader.maxDoc(),
                         build);
             }

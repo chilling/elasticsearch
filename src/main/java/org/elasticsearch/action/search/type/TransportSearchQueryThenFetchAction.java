@@ -39,6 +39,8 @@ import org.elasticsearch.search.query.QuerySearchResultProvider;
 import org.elasticsearch.threadpool.ThreadPool;
 import org.elasticsearch.util.ESCollections.IntList;
 
+import com.carrotsearch.hppc.IntArrayList;
+
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -64,7 +66,7 @@ public class TransportSearchQueryThenFetchAction extends TransportSearchTypeActi
 
         private final Map<SearchShardTarget, FetchSearchResult> fetchResults = searchCache.obtainFetchResults();
 
-        private volatile Map<SearchShardTarget, IntList> docIdsToLoad;
+        private volatile Map<SearchShardTarget, IntArrayList> docIdsToLoad;
 
         private AsyncAction(SearchRequest request, ActionListener<SearchResponse> listener) {
             super(request, listener);
@@ -88,7 +90,7 @@ public class TransportSearchQueryThenFetchAction extends TransportSearchTypeActi
         @Override
         protected void moveToSecondPhase() {
             sortedShardList = searchPhaseController.sortDocs(queryResults.values());
-            final Map<SearchShardTarget, IntList> docIdsToLoad = searchPhaseController.docIdsToLoad(sortedShardList);
+            final Map<SearchShardTarget, IntArrayList> docIdsToLoad = searchPhaseController.docIdsToLoad(sortedShardList);
             this.docIdsToLoad = docIdsToLoad;
 
             if (docIdsToLoad.isEmpty()) {
@@ -99,7 +101,7 @@ public class TransportSearchQueryThenFetchAction extends TransportSearchTypeActi
             final AtomicInteger counter = new AtomicInteger(docIdsToLoad.size());
 
             int localOperations = 0;
-            for (final Map.Entry<SearchShardTarget, IntList> entry : docIdsToLoad.entrySet()) {
+            for (final Map.Entry<SearchShardTarget, IntArrayList> entry : docIdsToLoad.entrySet()) {
                 DiscoveryNode node = nodes.get(entry.getKey().nodeId());
                 if (node.id().equals(nodes.localNodeId())) {
                     localOperations++;
@@ -114,7 +116,7 @@ public class TransportSearchQueryThenFetchAction extends TransportSearchTypeActi
                     threadPool.executor(ThreadPool.Names.SEARCH).execute(new Runnable() {
                         @Override
                         public void run() {
-                            for (final Map.Entry<SearchShardTarget, IntList> entry : docIdsToLoad.entrySet()) {
+                            for (final Map.Entry<SearchShardTarget, IntArrayList> entry : docIdsToLoad.entrySet()) {
                                 DiscoveryNode node = nodes.get(entry.getKey().nodeId());
                                 if (node.id().equals(nodes.localNodeId())) {
                                     FetchSearchRequest fetchSearchRequest = new FetchSearchRequest(request, queryResults.get(entry.getKey()).id(), entry.getValue());
@@ -125,7 +127,7 @@ public class TransportSearchQueryThenFetchAction extends TransportSearchTypeActi
                     });
                 } else {
                     boolean localAsync = request.operationThreading() == SearchOperationThreading.THREAD_PER_SHARD;
-                    for (final Map.Entry<SearchShardTarget, IntList> entry : docIdsToLoad.entrySet()) {
+                    for (final Map.Entry<SearchShardTarget, IntArrayList> entry : docIdsToLoad.entrySet()) {
                         final DiscoveryNode node = nodes.get(entry.getKey().nodeId());
                         if (node.id().equals(nodes.localNodeId())) {
                             final FetchSearchRequest fetchSearchRequest = new FetchSearchRequest(request, queryResults.get(entry.getKey()).id(), entry.getValue());

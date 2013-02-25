@@ -41,6 +41,8 @@ import org.elasticsearch.index.settings.IndexSettings;
 import org.elasticsearch.util.ESCollections;
 import org.elasticsearch.util.ESCollections.DoubleList;
 
+import com.carrotsearch.hppc.DoubleArrayList;
+
 /**
  */
 public class DoubleArrayIndexFieldData extends AbstractIndexFieldData<DoubleArrayAtomicFieldData> implements IndexNumericFieldData<DoubleArrayAtomicFieldData> {
@@ -91,15 +93,15 @@ public class DoubleArrayIndexFieldData extends AbstractIndexFieldData<DoubleArra
             return DoubleArrayAtomicFieldData.EMPTY;
         }
         // TODO: how can we guess the number of terms? numerics end up creating more terms per value...
-        final DoubleList values = ESCollections.newDoubleList();
+        final DoubleArrayList values = new DoubleArrayList();
 
-        values.addX(0); // first "t" indicates null value
+        values.add(0); // first "t" indicates null value
         OrdinalsBuilder builder = new OrdinalsBuilder(terms, reader.maxDoc());
         try {
             final BytesRefIterator iter = builder.buildFromTerms(builder.wrapNumeric64Bit(terms.iterator(null)), reader.getLiveDocs());
             BytesRef term;
             while ((term = iter.next()) != null) {
-                values.addX(NumericUtils.sortableLongToDouble(NumericUtils.prefixCodedToLong(term)));
+                values.add(NumericUtils.sortableLongToDouble(NumericUtils.prefixCodedToLong(term)));
             }
             Ordinals build = builder.build(fieldDataType.getSettings());
             if (!build.isMultiValued()) {
@@ -117,7 +119,7 @@ public class DoubleArrayIndexFieldData extends AbstractIndexFieldData<DoubleArra
                 }
             } else {
                 return new DoubleArrayAtomicFieldData.WithOrdinals(
-                        values.toArray(new double[values.size()]),
+                        values.toArray(),
                         reader.maxDoc(),
                         build);
             }

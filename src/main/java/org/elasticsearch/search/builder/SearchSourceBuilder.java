@@ -19,6 +19,7 @@
 
 package org.elasticsearch.search.builder;
 
+import com.carrotsearch.hppc.ObjectFloatOpenHashMap;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import org.elasticsearch.ElasticSearchGenerationException;
@@ -110,7 +111,7 @@ public class SearchSourceBuilder implements ToXContent {
 
     private RescoreBuilder rescoreBuilder;
 
-    private ObjectFloatMap<String> indexBoost = null;
+    private ObjectFloatOpenHashMap<String> indexBoost = null;
 
     private String[] stats;
 
@@ -542,7 +543,7 @@ public class SearchSourceBuilder implements ToXContent {
      */
     public SearchSourceBuilder indexBoost(String index, float indexBoost) {
         if (this.indexBoost == null) {
-            this.indexBoost = ESCollections.newObjectFloatMap();
+            this.indexBoost = new ObjectFloatOpenHashMap();
         }
         this.indexBoost.put(index, indexBoost);
         return this;
@@ -702,9 +703,15 @@ public class SearchSourceBuilder implements ToXContent {
 
         if (indexBoost != null) {
             builder.startObject("indices_boost");
-            for (ObjectFloatIterator<String> it = indexBoost.floatIterator(); it.hasNext(); ) {
-                it.advance();
-                builder.field(it.key(), it.value());
+            
+            final boolean[] allocated = indexBoost.allocated;
+            final String[] keys = indexBoost.keys;
+            final float[] value = indexBoost.values;
+
+            for (int i = 0; i < allocated.length; i++) {
+                if(allocated[i]) {
+                    builder.field(keys[i], value[i]);
+                }
             }
             builder.endObject();
         }

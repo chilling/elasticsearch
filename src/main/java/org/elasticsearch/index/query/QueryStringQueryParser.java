@@ -19,6 +19,7 @@
 
 package org.elasticsearch.index.query;
 
+import com.carrotsearch.hppc.ObjectFloatOpenHashMap;
 import com.google.common.collect.Lists;
 
 import org.apache.lucene.queryparser.classic.MapperQueryParser;
@@ -106,7 +107,7 @@ public class QueryStringQueryParser implements QueryParser {
                                 qpSettings.fields().add(field);
                                 if (fBoost != -1) {
                                     if (qpSettings.boosts() == null) {
-                                        ObjectFloatMap<String> map = ESCollections.newObjectFloatMap(Constants.DEFAULT_CAPACITY, Constants.DEFAULT_LOAD_FACTOR, 1.0f);
+                                        ObjectFloatOpenHashMap<String> map = new ObjectFloatOpenHashMap<String>(Constants.DEFAULT_CAPACITY, Constants.DEFAULT_LOAD_FACTOR);
                                         qpSettings.boosts(map);
                                     }
                                     qpSettings.boosts().put(field, fBoost);
@@ -116,7 +117,7 @@ public class QueryStringQueryParser implements QueryParser {
                             qpSettings.fields().add(fField);
                             if (fBoost != -1) {
                                 if (qpSettings.boosts() == null) {
-                                    ObjectFloatMap<String> map = ESCollections.newObjectFloatMap(Constants.DEFAULT_CAPACITY, Constants.DEFAULT_LOAD_FACTOR, 1.0f);
+                                    ObjectFloatOpenHashMap<String> map = new ObjectFloatOpenHashMap(Constants.DEFAULT_CAPACITY, Constants.DEFAULT_LOAD_FACTOR);
                                     qpSettings.boosts(map);
                                 }
                                 qpSettings.boosts().put(fField, fBoost);

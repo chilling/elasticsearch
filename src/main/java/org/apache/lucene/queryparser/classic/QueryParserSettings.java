@@ -22,7 +22,8 @@ package org.apache.lucene.queryparser.classic;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.search.FuzzyQuery;
 import org.apache.lucene.search.MultiTermQuery;
-import org.elasticsearch.util.ESCollections.ObjectFloatMap;
+
+import com.carrotsearch.hppc.ObjectFloatMap;
 
 import java.util.Collection;
 import java.util.List;

@@ -40,6 +40,8 @@ import org.elasticsearch.util.ESCollections;
 import org.elasticsearch.util.ESCollections.Constants;
 import org.elasticsearch.util.ESCollections.ObjectIntMap;
 
+import com.carrotsearch.hppc.ObjectIntOpenHashMap;
+
 import java.util.*;
 import java.util.concurrent.ConcurrentMap;
 
@@ -241,7 +243,7 @@ public class SimpleIdCache extends AbstractIndexComponent implements IdCache, Se
     }
 
     static class TypeBuilder {
-        final ObjectIntMap<HashedBytesArray> idToDoc = ESCollections.newObjectIntMap(Constants.DEFAULT_CAPACITY, Constants.DEFAULT_LOAD_FACTOR, -1);
+        final ObjectIntOpenHashMap<HashedBytesArray> idToDoc = new ObjectIntOpenHashMap<HashedBytesArray>(ObjectIntOpenHashMap.DEFAULT_CAPACITY, ObjectIntOpenHashMap.DEFAULT_LOAD_FACTOR);
         final HashedBytesArray[] docToId;
         final ArrayList<HashedBytesArray> parentIdsValues = new ArrayList<HashedBytesArray>();
         final int[] parentIdsOrdinals;

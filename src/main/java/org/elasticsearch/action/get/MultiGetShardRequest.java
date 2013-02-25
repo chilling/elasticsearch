@@ -26,6 +26,8 @@ import org.elasticsearch.common.io.stream.StreamOutput;
 import org.elasticsearch.util.ESCollections;
 import org.elasticsearch.util.ESCollections.IntList;
 
+import com.carrotsearch.hppc.IntArrayList;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -37,7 +39,7 @@ public class MultiGetShardRequest extends SingleShardOperationRequest<MultiGetSh
     Boolean realtime;
     boolean refresh;
 
-    IntList locations;
+    IntArrayList locations;
     List<String> types;
     List<String> ids;
     List<String[]> fields;
@@ -49,7 +51,7 @@ public class MultiGetShardRequest extends SingleShardOperationRequest<MultiGetSh
     MultiGetShardRequest(String index, int shardId) {
         super(index);
         this.shardId = shardId;
-        locations = ESCollections.newIntList();
+        locations = new IntArrayList();
         types = new ArrayList<String>();
         ids = new ArrayList<String>();
         fields = new ArrayList<String[]>();
@@ -92,7 +94,7 @@ public class MultiGetShardRequest extends SingleShardOperationRequest<MultiGetSh
     }
 
     public void add(int location, @Nullable String type, String id, String[] fields) {
-        this.locations.addX(location);
+        this.locations.add(location);
         this.types.add(type);
         this.ids.add(id);
         this.fields.add(fields);
@@ -102,12 +104,12 @@ public class MultiGetShardRequest extends SingleShardOperationRequest<MultiGetSh
     public void readFrom(StreamInput in) throws IOException {
         super.readFrom(in);
         int size = in.readVInt();
-        locations = ESCollections.newIntList(size);
+        locations = new IntArrayList(size);
         types = new ArrayList<String>(size);
         ids = new ArrayList<String>(size);
         fields = new ArrayList<String[]>(size);
         for (int i = 0; i < size; i++) {
-            locations.addX(in.readVInt());
+            locations.add(in.readVInt());
             if (in.readBoolean()) {
                 types.add(in.readString());
             } else {

@@ -19,6 +19,9 @@
 
 package org.elasticsearch.test.integration.cluster.allocation;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
+
 import org.elasticsearch.action.admin.cluster.health.ClusterHealthResponse;
 import org.elasticsearch.cluster.ClusterState;
 import org.elasticsearch.cluster.routing.IndexRoutingTable;
@@ -29,13 +32,10 @@ import org.elasticsearch.common.logging.Loggers;
 import org.elasticsearch.common.settings.ImmutableSettings;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.test.integration.AbstractNodesTests;
-import org.elasticsearch.util.ESCollections;
-import org.elasticsearch.util.ESCollections.ObjectIntMap;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.Test;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.equalTo;
+import com.carrotsearch.hppc.ObjectIntOpenHashMap;
 
 /**
  */
@@ -71,7 +71,7 @@ public class AwarenessAllocationTests extends AbstractNodesTests {
         startNode("node3", ImmutableSettings.settingsBuilder().put(commonSettings).put("node.rack_id", "rack_2"));
 
         long start = System.currentTimeMillis();
-        ObjectIntMap<String> counts;
+        ObjectIntOpenHashMap<String> counts;
         // On slow machines the initial relocation might be delayed
         do {
             Thread.sleep(100);
@@ -83,15 +83,15 @@ public class AwarenessAllocationTests extends AbstractNodesTests {
             ClusterState clusterState = client("node1").admin().cluster().prepareState().execute().actionGet().getState();
             //System.out.println(clusterState.routingTable().prettyPrint());
             // verify that we have 10 shards on node3
-            counts = ESCollections.newObjectIntMap();
+            counts = new ObjectIntOpenHashMap<String>();
             for (IndexRoutingTable indexRoutingTable : clusterState.routingTable()) {
                 for (IndexShardRoutingTable indexShardRoutingTable : indexRoutingTable) {
                     for (ShardRouting shardRouting : indexShardRoutingTable) {
-                        counts.adjustOrPutValue(clusterState.nodes().get(shardRouting.currentNodeId()).name(), 1, 1);
+                        counts.putOrAdd(clusterState.nodes().get(shardRouting.currentNodeId()).name(), 1, 1);
                     }
                 }
             }
-        } while (counts.getX("node3") != 10 && (System.currentTimeMillis() - start) < 10000);
-        assertThat(counts.getX("node3"), equalTo(10));
+        } while (counts.get("node3") != 10 && (System.currentTimeMillis() - start) < 10000);
+        assertThat(counts.get("node3"), equalTo(10));
     }
 }

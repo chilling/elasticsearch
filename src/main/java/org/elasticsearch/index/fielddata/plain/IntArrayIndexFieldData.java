@@ -41,6 +41,8 @@ import org.elasticsearch.index.settings.IndexSettings;
 import org.elasticsearch.util.ESCollections;
 import org.elasticsearch.util.ESCollections.IntList;
 
+import com.carrotsearch.hppc.IntArrayList;
+
 /**
  */
 public class IntArrayIndexFieldData extends AbstractIndexFieldData<IntArrayAtomicFieldData> implements IndexNumericFieldData<IntArrayAtomicFieldData> {
@@ -90,15 +92,15 @@ public class IntArrayIndexFieldData extends AbstractIndexFieldData<IntArrayAtomi
             return IntArrayAtomicFieldData.EMPTY;
         }
         // TODO: how can we guess the number of terms? numerics end up creating more terms per value...
-        final IntList values = ESCollections.newIntList();
+        final IntArrayList values = new IntArrayList();
 
-        values.addX(0); // first "t" indicates null value
+        values.add(0); // first "t" indicates null value
         OrdinalsBuilder builder = new OrdinalsBuilder(terms, reader.maxDoc());
         try {
             BytesRefIterator iter = builder.buildFromTerms(builder.wrapNumeric32Bit(terms.iterator(null)), reader.getLiveDocs());
             BytesRef term;
             while ((term = iter.next()) != null) {
-                values.addX(NumericUtils.prefixCodedToInt(term));
+                values.add(NumericUtils.prefixCodedToInt(term));
             }
             Ordinals build = builder.build(fieldDataType.getSettings());
             if (!build.isMultiValued()) {
@@ -116,7 +118,7 @@ public class IntArrayIndexFieldData extends AbstractIndexFieldData<IntArrayAtomi
                 }
             } else {
                 return new IntArrayAtomicFieldData.WithOrdinals(
-                        values.toArray(new int[values.size()]),
+                        values.toArray(),
                         reader.maxDoc(),
                         build);
             }

@@ -25,36 +25,35 @@ import org.apache.lucene.search.TermStatistics;
 import org.elasticsearch.common.io.stream.StreamInput;
 import org.elasticsearch.common.io.stream.StreamOutput;
 import org.elasticsearch.common.io.stream.Streamable;
-import org.elasticsearch.util.ESCollections;
-import org.elasticsearch.util.ESCollections.Constants;
+
+import com.carrotsearch.hppc.ObjectObjectOpenHashMap;
 
 import java.io.IOException;
-import java.util.Map;
 
 /**
  *
  */
 public class AggregatedDfs implements Streamable {
 
-    private Map<Term, TermStatistics> termStatistics;
-    private Map<String, CollectionStatistics> fieldStatistics;
+    private ObjectObjectOpenHashMap<Term, TermStatistics> termStatistics;
+    private ObjectObjectOpenHashMap<String, CollectionStatistics> fieldStatistics;
     private long maxDoc;
 
     private AggregatedDfs() {
 
     }
 
-    public AggregatedDfs(Map<Term, TermStatistics> termStatistics, Map<String, CollectionStatistics> fieldStatistics, long maxDoc) {
+    public AggregatedDfs(ObjectObjectOpenHashMap<Term, TermStatistics> termStatistics, ObjectObjectOpenHashMap<String, CollectionStatistics> fieldStatistics, long maxDoc) {
         this.termStatistics = termStatistics;
         this.fieldStatistics = fieldStatistics;
         this.maxDoc = maxDoc;
     }
 
-    public Map<Term, TermStatistics> termStatistics() {
+    public ObjectObjectOpenHashMap<Term, TermStatistics> termStatistics() {
         return termStatistics;
     }
 
-    public Map<String, CollectionStatistics> fieldStatistics() {
+    public ObjectObjectOpenHashMap<String, CollectionStatistics> fieldStatistics() {
         return fieldStatistics;
     }
 
@@ -71,14 +70,14 @@ public class AggregatedDfs implements Streamable {
     @Override
     public void readFrom(StreamInput in) throws IOException {
         int size = in.readVInt();
-        termStatistics = ESCollections.newMap(size, Constants.DEFAULT_LOAD_FACTOR);
+        termStatistics = new ObjectObjectOpenHashMap<Term, TermStatistics>(size, ObjectObjectOpenHashMap.DEFAULT_LOAD_FACTOR);
         for (int i = 0; i < size; i++) {
             Term term = new Term(in.readString(), in.readBytesRef());
             TermStatistics stats = new TermStatistics(in.readBytesRef(), in.readVLong(), in.readVLong());
             termStatistics.put(term, stats);
         }
         size = in.readVInt();
-        fieldStatistics = ESCollections.newMap(size, Constants.DEFAULT_LOAD_FACTOR);
+        fieldStatistics = new ObjectObjectOpenHashMap<String, CollectionStatistics>(size, ObjectObjectOpenHashMap.DEFAULT_LOAD_FACTOR);
         for (int i = 0; i < size; i++) {
             String field = in.readString();
             CollectionStatistics stats = new CollectionStatistics(field, in.readVLong(), in.readVLong(), in.readVLong(), in.readVLong());
@@ -90,23 +89,37 @@ public class AggregatedDfs implements Streamable {
     @Override
     public void writeTo(final StreamOutput out) throws IOException {
         out.writeVInt(termStatistics.size());
-        for (Map.Entry<Term, TermStatistics> termTermStatisticsEntry : termStatistics.entrySet()) {
-            Term term = termTermStatisticsEntry.getKey();
-            out.writeString(term.field());
-            out.writeBytesRef(term.bytes());
-            TermStatistics stats = termTermStatisticsEntry.getValue();
-            out.writeBytesRef(stats.term());
-            out.writeVLong(stats.docFreq());
-            out.writeVLong(stats.totalTermFreq());
+        
+        final boolean[] tStatsAllocated = termStatistics.allocated;
+        final Term[] tStatsKeys = termStatistics.keys;
+        final TermStatistics[] tStatsValues = termStatistics.values;
+        
+        for(int i=0; i<tStatsAllocated.length; i++) {
+            if(tStatsAllocated[i]) {
+                Term term = tStatsKeys[i];
+                out.writeString(term.field());
+                out.writeBytesRef(term.bytes());
+                TermStatistics stats = tStatsValues[i];
+                out.writeBytesRef(stats.term());
+                out.writeVLong(stats.docFreq());
+                out.writeVLong(stats.totalTermFreq());
+            }
         }
-
+        
         out.writeVInt(fieldStatistics.size());
-        for (Map.Entry<String, CollectionStatistics> entry : fieldStatistics.entrySet()) {
-            out.writeString(entry.getKey());
-            out.writeVLong(entry.getValue().maxDoc());
-            out.writeVLong(entry.getValue().docCount());
-            out.writeVLong(entry.getValue().sumTotalTermFreq());
-            out.writeVLong(entry.getValue().sumDocFreq());
+
+        final boolean[] fStatsAllocated = fieldStatistics.allocated;
+        final String[] fStatsKeys = fieldStatistics.keys;
+        final CollectionStatistics[] fStatsValues = fieldStatistics.values;
+
+        for (int i = 0; i < fStatsAllocated.length; i++) {
+            if(fStatsAllocated[i]) {
+                out.writeString(fStatsKeys[i]);
+                out.writeVLong(fStatsValues[i].maxDoc());
+                out.writeVLong(fStatsValues[i].docCount());
+                out.writeVLong(fStatsValues[i].sumTotalTermFreq());
+                out.writeVLong(fStatsValues[i].sumDocFreq());
+            }
         }
 
         out.writeVLong(maxDoc);

@@ -24,8 +24,8 @@ import org.elasticsearch.cluster.block.ClusterBlocks;
 import org.elasticsearch.cluster.metadata.IndexMetaData;
 import org.elasticsearch.cluster.metadata.MetaData;
 import org.elasticsearch.cluster.node.DiscoveryNode;
-import org.elasticsearch.util.ESCollections;
-import org.elasticsearch.util.ESCollections.ObjectIntMap;
+
+import com.carrotsearch.hppc.ObjectIntOpenHashMap;
 
 import java.util.*;
 
@@ -50,7 +50,7 @@ public class RoutingNodes implements Iterable<RoutingNode> {
 
     private final List<MutableShardRouting> ignoredUnassigned = newArrayList();
 
-    private final Map<String, ObjectIntMap<String>> nodesPerAttributeNames = new HashMap<String, ObjectIntMap<String>>();
+    private final Map<String, ObjectIntOpenHashMap<String>> nodesPerAttributeNames = new HashMap<String, ObjectIntOpenHashMap<String>>();
 
     public RoutingNodes(ClusterState clusterState) {
         this.metaData = clusterState.metaData();
@@ -164,15 +164,15 @@ public class RoutingNodes implements Iterable<RoutingNode> {
         return nodesToShards.get(nodeId);
     }
 
-    public ObjectIntMap<String> nodesPerAttributesCounts(String attributeName) {
-        ObjectIntMap<String> nodesPerAttributesCounts = nodesPerAttributeNames.get(attributeName);
+    public ObjectIntOpenHashMap<String> nodesPerAttributesCounts(String attributeName) {
+        ObjectIntOpenHashMap<String> nodesPerAttributesCounts = nodesPerAttributeNames.get(attributeName);
         if (nodesPerAttributesCounts != null) {
             return nodesPerAttributesCounts;
         }
-        nodesPerAttributesCounts = ESCollections.newObjectIntMap();
+        nodesPerAttributesCounts = new ObjectIntOpenHashMap<String>();
         for (RoutingNode routingNode : this) {
             String attrValue = routingNode.node().attributes().get(attributeName);
-            nodesPerAttributesCounts.adjustOrPutValue(attrValue, 1, 1);
+            nodesPerAttributesCounts.putOrAdd(attrValue, 1, 1);
         }
         nodesPerAttributeNames.put(attributeName, nodesPerAttributesCounts);
         return nodesPerAttributesCounts;

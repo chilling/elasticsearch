@@ -38,6 +38,8 @@ import org.elasticsearch.index.settings.IndexSettings;
 import org.elasticsearch.util.ESCollections;
 import org.elasticsearch.util.ESCollections.DoubleList;
 
+import com.carrotsearch.hppc.DoubleArrayList;
+
 /**
  */
 public class GeoPointDoubleArrayIndexFieldData extends AbstractIndexFieldData<GeoPointDoubleArrayAtomicFieldData> implements IndexGeoPointFieldData<GeoPointDoubleArrayAtomicFieldData> {
@@ -83,10 +85,10 @@ public class GeoPointDoubleArrayIndexFieldData extends AbstractIndexFieldData<Ge
             return GeoPointDoubleArrayAtomicFieldData.EMPTY;
         }
         // TODO: how can we guess the number of terms? numerics end up creating more terms per value...
-        final DoubleList lat = ESCollections.newDoubleList();
-        final DoubleList lon = ESCollections.newDoubleList();
-        lat.addX(0); // first "t" indicates null value
-        lon.addX(0); // first "t" indicates null value
+        final DoubleArrayList lat = new DoubleArrayList();
+        final DoubleArrayList lon = new DoubleArrayList();
+        lat.add(0); // first "t" indicates null value
+        lon.add(0); // first "t" indicates null value
         OrdinalsBuilder builder = new OrdinalsBuilder(terms, reader.maxDoc());
         final CharsRef spare = new CharsRef();
         try {
@@ -97,8 +99,8 @@ public class GeoPointDoubleArrayIndexFieldData extends AbstractIndexFieldData<Ge
                 boolean parsed = false;
                 for (int i = spare.offset; i < spare.length; i++) {
                     if (spare.chars[i] == ',') { // safes a string creation 
-                        lat.addX(Double.parseDouble(new String(spare.chars, spare.offset, (i - spare.offset))));
-                        lon.addX(Double.parseDouble(new String(spare.chars, (spare.offset + (i + 1)), spare.length - ((i + 1) - spare.offset))));
+                        lat.add(Double.parseDouble(new String(spare.chars, spare.offset, (i - spare.offset))));
+                        lon.add(Double.parseDouble(new String(spare.chars, (spare.offset + (i + 1)), spare.length - ((i + 1) - spare.offset))));
                         parsed = true;
                         break;
                     }
@@ -124,8 +126,8 @@ public class GeoPointDoubleArrayIndexFieldData extends AbstractIndexFieldData<Ge
                 }
             } else {
                 return new GeoPointDoubleArrayAtomicFieldData.WithOrdinals(
-                        lon.toArray(new double[lon.size()]),
-                        lat.toArray(new double[lat.size()]),
+                        lon.toArray(),
+                        lat.toArray(),
                         reader.maxDoc(), build);
             }
         } finally {

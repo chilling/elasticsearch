@@ -19,21 +19,38 @@
 
 package org.elasticsearch.common;
 
-import org.elasticsearch.common.util.concurrent.ConcurrentCollections;
-import org.elasticsearch.util.collections.hppc.BaseMapImpl;
-import org.elasticsearch.util.collections.hppc.BaseSetImpl;
-
-import com.carrotsearch.hppc.*;
-
-import com.carrotsearch.hppc.ObjectOpenHashSet;
-
 import java.lang.ref.SoftReference;
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
+
+import org.elasticsearch.common.util.concurrent.ConcurrentCollections;
+import org.elasticsearch.util.collections.hppc.BaseSetImpl;
+
+import com.carrotsearch.hppc.ByteIntMap;
+import com.carrotsearch.hppc.ByteIntOpenHashMap;
+import com.carrotsearch.hppc.DoubleIntMap;
+import com.carrotsearch.hppc.DoubleIntOpenHashMap;
+import com.carrotsearch.hppc.DoubleObjectMap;
+import com.carrotsearch.hppc.DoubleObjectOpenHashMap;
+import com.carrotsearch.hppc.FloatIntMap;
+import com.carrotsearch.hppc.FloatIntOpenHashMap;
+import com.carrotsearch.hppc.IntIntMap;
+import com.carrotsearch.hppc.IntIntOpenHashMap;
+import com.carrotsearch.hppc.IntObjectMap;
+import com.carrotsearch.hppc.IntObjectOpenHashMap;
+import com.carrotsearch.hppc.LongIntMap;
+import com.carrotsearch.hppc.LongIntOpenHashMap;
+import com.carrotsearch.hppc.LongLongMap;
+import com.carrotsearch.hppc.LongLongOpenHashMap;
+import com.carrotsearch.hppc.LongObjectMap;
+import com.carrotsearch.hppc.LongObjectOpenHashMap;
+import com.carrotsearch.hppc.ObjectFloatOpenHashMap;
+import com.carrotsearch.hppc.ObjectIntOpenHashMap;
+import com.carrotsearch.hppc.ShortIntMap;
+import com.carrotsearch.hppc.ShortIntOpenHashMap;
 
 public class CacheRecycler {
 
@@ -300,11 +317,11 @@ public class CacheRecycler {
     public static ByteIntMap popByteIntMap() {
         Queue<ByteIntMap> ref = ByteIntMap.get();
         if (ref == null) {
-            return ESCollections.newByteIntMap();
+            return new ByteIntOpenHashMap();
         }
         ByteIntMap map = ref.poll();
         if (map == null) {
-            return ESCollections.newByteIntMap();
+            return new ByteIntOpenHashMap();
         }
         return map;
     }
@@ -327,11 +344,11 @@ public class CacheRecycler {
     public static ShortIntMap popShortIntMap() {
         Queue<ShortIntMap> ref = ShortIntMap.get();
         if (ref == null) {
-            return ESCollections.newShortIntMap();
+            return new ShortIntOpenHashMap();
         }
         ShortIntMap map = ref.poll();
         if (map == null) {
-            return ESCollections.newShortIntMap();
+            return new ShortIntOpenHashMap();
         }
         return map;
     }
@@ -355,11 +372,11 @@ public class CacheRecycler {
     public static LongIntMap popLongIntMap() {
         Queue<LongIntMap> ref = LongIntMap.get();
         if (ref == null) {
-            return ESCollections.newLongIntMap();
+            return new LongIntOpenHashMap();
         }
         LongIntMap map = ref.poll();
         if (map == null) {
-            return ESCollections.newLongIntMap();
+            return new LongIntOpenHashMap();
         }
         return map;
     }
@@ -376,24 +393,24 @@ public class CacheRecycler {
 
     // ------ TObjectIntMap -----
 
-    private final static SoftWrapper<Queue<ObjectIntMap<?>>> ObjectIntMap = new SoftWrapper<Queue<ObjectIntMap<?>>>();
+    private final static SoftWrapper<Queue<ObjectIntOpenHashMap<?>>> ObjectIntMap = new SoftWrapper<Queue<ObjectIntOpenHashMap<?>>>();
 
 
     @SuppressWarnings({"unchecked"})
-    public static <T> ObjectIntMap<T> popObjectIntMap() {
-        Queue<ObjectIntMap<?>> ref = ObjectIntMap.get();
+    public static <T> ObjectIntOpenHashMap<T> popObjectIntMap() {
+        Queue<ObjectIntOpenHashMap<?>> ref = ObjectIntMap.get();
         if (ref == null) {
-            return ESCollections.newObjectIntMap();
+            return new ObjectIntOpenHashMap<T>();
         }
-        ObjectIntMap map = ref.poll();
+        ObjectIntOpenHashMap map = ref.poll();
         if (map == null) {
-            return ESCollections.newObjectIntMap();
+            return new ObjectIntOpenHashMap<T>();
         }
         return map;
     }
 
-    public static <T> void pushObjectIntMap(ObjectIntMap<T> map) {
-        Queue<ObjectIntMap<?>> ref = ObjectIntMap.get();
+    public static <T> void pushObjectIntMap(ObjectIntOpenHashMap<T> map) {
+        Queue<ObjectIntOpenHashMap<?>> ref = ObjectIntMap.get();
         if (ref == null) {
             ref = ConcurrentCollections.newQueue();
             ObjectIntMap.set(ref);
@@ -404,24 +421,24 @@ public class CacheRecycler {
 
     // ------ TIntObjectMap -----
 
-    private final static SoftWrapper<Queue<IntObjectMap<?>>> IntObjectMap = new SoftWrapper<Queue<IntObjectMap<?>>>();
+    private final static SoftWrapper<Queue<IntObjectOpenHashMap<?>>> IntObjectMap = new SoftWrapper<Queue<IntObjectOpenHashMap<?>>>();
 
 
     @SuppressWarnings({"unchecked"})
-    public static <T> IntObjectMap<T> popIntObjectMap() {
-        Queue<IntObjectMap<?>> ref = IntObjectMap.get();
+    public static <T> IntObjectOpenHashMap<T> popIntObjectMap() {
+        Queue<IntObjectOpenHashMap<?>> ref = IntObjectMap.get();
         if (ref == null) {
-            return ESCollections.newIntObjectMap();
+            return new IntObjectOpenHashMap<T>();
         }
-        IntObjectMap map = ref.poll();
+        IntObjectOpenHashMap map = ref.poll();
         if (map == null) {
-            return ESCollections.newIntObjectMap();
+            return new IntObjectOpenHashMap<T>();
         }
         return map;
     }
 
-    public static <T> void pushIntObjectMap(IntObjectMap<T> map) {
-        Queue<IntObjectMap<?>> ref = IntObjectMap.get();
+    public static <T> void pushIntObjectMap(IntObjectOpenHashMap<T> map) {
+        Queue<IntObjectOpenHashMap<?>> ref = IntObjectMap.get();
         if (ref == null) {
             ref = ConcurrentCollections.newQueue();
             IntObjectMap.set(ref);
@@ -432,23 +449,23 @@ public class CacheRecycler {
 
     // ------ TObjectFloatMap -----
 
-    private final static SoftWrapper<Queue<ObjectFloatMap<?>>> ObjectFloatMap = new SoftWrapper<Queue<ObjectFloatMap<?>>>();
+    private final static SoftWrapper<Queue<ObjectFloatOpenHashMap<?>>> ObjectFloatMap = new SoftWrapper<Queue<ObjectFloatOpenHashMap<?>>>();
 
     @SuppressWarnings({"unchecked"})
-    public static <T> ObjectFloatMap<T> popObjectFloatMap() {
-        Queue<ObjectFloatMap<?>> ref = ObjectFloatMap.get();
+    public static <T> ObjectFloatOpenHashMap<T> popObjectFloatMap() {
+        Queue<ObjectFloatOpenHashMap<?>> ref = ObjectFloatMap.get();
         if (ref == null) {
-            return ESCollections.newObjectFloatMap();
+            return new ObjectFloatOpenHashMap<T>();
         }
-        ObjectFloatMap map = ref.poll();
+        ObjectFloatOpenHashMap map = ref.poll();
         if (map == null) {
-            return ESCollections.newObjectFloatMap();
+            return new ObjectFloatOpenHashMap<T>();
         }
         return map;
     }
 
-    public static <T> void pushObjectFloatMap(ObjectFloatMap<T> map) {
-        Queue<ObjectFloatMap<?>> ref = ObjectFloatMap.get();
+    public static <T> void pushObjectFloatMap(ObjectFloatOpenHashMap<T> map) {
+        Queue<ObjectFloatOpenHashMap<?>> ref = ObjectFloatMap.get();
         if (ref == null) {
             ref = ConcurrentCollections.newQueue();
             ObjectFloatMap.set(ref);

@@ -19,6 +19,8 @@
 
 package org.elasticsearch.search.dfs;
 
+import com.carrotsearch.hppc.ObjectObjectOpenHashMap;
+import com.carrotsearch.hppc.ObjectOpenHashSet;
 import com.google.common.collect.ImmutableMap;
 import org.apache.lucene.index.IndexReaderContext;
 import org.apache.lucene.index.Term;
@@ -31,6 +33,7 @@ import org.elasticsearch.search.SearchPhase;
 import org.elasticsearch.search.internal.SearchContext;
 import org.elasticsearch.util.ESCollections;
 
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
@@ -42,7 +45,7 @@ public class DfsPhase implements SearchPhase {
     private static ThreadLocal<ThreadLocals.CleanableValue<Set<Term>>> cachedTermsSet = new ThreadLocal<ThreadLocals.CleanableValue<Set<Term>>>() {
         @Override
         protected ThreadLocals.CleanableValue<Set<Term>> initialValue() {
-            Set<Term> set = ESCollections.newSet();
+            Set<Term> set = new HashSet<Term>();
             return new ThreadLocals.CleanableValue<Set<Term>>(set);
         }
     };
@@ -78,7 +81,7 @@ public class DfsPhase implements SearchPhase {
                 termStatistics[i] = context.searcher().termStatistics(terms[i], termContext);
             }
 
-            Map<String, CollectionStatistics> fieldStatistics = ESCollections.newMap();
+            ObjectObjectOpenHashMap<String, CollectionStatistics> fieldStatistics = new ObjectObjectOpenHashMap<String, CollectionStatistics>();
             for (Term term : terms) {
                 if (!fieldStatistics.containsKey(term.field())) {
                     fieldStatistics.put(term.field(), context.searcher().collectionStatistics(term.field()));

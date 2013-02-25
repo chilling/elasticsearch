@@ -21,8 +21,7 @@ package org.elasticsearch.common.transport;
 
 import java.util.StringTokenizer;
 
-import org.elasticsearch.util.ESCollections;
-import org.elasticsearch.util.ESCollections.IntList;
+import com.carrotsearch.hppc.IntArrayList;
 
 /**
  *
@@ -36,15 +35,15 @@ public class PortsRange {
     }
 
     public int[] ports() throws NumberFormatException {
-        final IntList ports = ESCollections.newIntList();
+        final IntArrayList ports = new IntArrayList();
         iterate(new PortCallback() {
             @Override
             public boolean onPortNumber(int portNumber) {
-                ports.addX(portNumber);
+                ports.add(portNumber);
                 return false;
             }
         });
-        return ports.toArray(new int[ports.size()]);
+        return ports.toArray();
     }
 
     public boolean iterate(PortCallback callback) throws NumberFormatException {

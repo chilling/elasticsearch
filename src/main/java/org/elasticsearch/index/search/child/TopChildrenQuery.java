@@ -19,23 +19,33 @@
 
 package org.elasticsearch.index.search.child;
 
-import org.apache.lucene.index.*;
-import org.apache.lucene.search.*;
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.Comparator;
+import java.util.Map;
+import java.util.Set;
+
+import org.apache.lucene.index.AtomicReader;
+import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.ReaderUtil;
+import org.apache.lucene.index.Term;
+import org.apache.lucene.search.Explanation;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.search.ScoreDoc;
+import org.apache.lucene.search.Scorer;
+import org.apache.lucene.search.TopDocs;
+import org.apache.lucene.search.Weight;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.ToStringUtils;
 import org.elasticsearch.ElasticSearchIllegalStateException;
 import org.elasticsearch.common.CacheRecycler;
 import org.elasticsearch.common.bytes.HashedBytesArray;
 import org.elasticsearch.common.lucene.search.EmptyScorer;
-import org.elasticsearch.common.trove.ExtTHashMap;
 import org.elasticsearch.search.internal.SearchContext;
-import org.elasticsearch.util.ESCollections.IntObjectMap;
 
-import java.io.IOException;
-import java.util.Arrays;
-import java.util.Comparator;
-import java.util.Map;
-import java.util.Set;
+import com.carrotsearch.hppc.IntObjectOpenHashMap;
 
 /**
  * A query that evaluates the top matching child documents (based on the score) in order to determine what
@@ -166,7 +176,7 @@ public class TopChildrenQuery extends Query implements SearchContext.Rewrite {
 
     int resolveParentDocuments(TopDocs topDocs, SearchContext context) {
         int parentHitsResolved = 0;
-        Map<Object, IntObjectMap<ParentDoc>> parentDocsPerReader = CacheRecycler.popHashMap();
+        Map<Object, IntObjectOpenHashMap<ParentDoc>> parentDocsPerReader = CacheRecycler.popHashMap();
         for (ScoreDoc scoreDoc : topDocs.scoreDocs) {
             int readerIndex = ReaderUtil.subIndex(scoreDoc.doc, context.searcher().getIndexReader().leaves());
             AtomicReaderContext subContext = context.searcher().getIndexReader().leaves().get(readerIndex);
@@ -186,7 +196,7 @@ public class TopChildrenQuery extends Query implements SearchContext.Rewrite {
                 if (parentDocId != -1 && (liveDocs == null || liveDocs.get(parentDocId))) {
                     // we found a match, add it and break
 
-                    IntObjectMap<ParentDoc> readerParentDocs = parentDocsPerReader.get(indexReader.getCoreCacheKey());
+                    IntObjectOpenHashMap<ParentDoc> readerParentDocs = parentDocsPerReader.get(indexReader.getCoreCacheKey());
                     if (readerParentDocs == null) {
                         readerParentDocs = CacheRecycler.popIntObjectMap();
                         parentDocsPerReader.put(indexReader.getCoreCacheKey(), readerParentDocs);
@@ -212,8 +222,8 @@ public class TopChildrenQuery extends Query implements SearchContext.Rewrite {
             }
         }
 
-        for (Map.Entry<Object, IntObjectMap<ParentDoc>> entry : parentDocsPerReader.entrySet()) {
-            ParentDoc[] values = entry.getValue().values(new ParentDoc[entry.getValue().size()]);
+        for (Map.Entry<Object, IntObjectOpenHashMap<ParentDoc>> entry : parentDocsPerReader.entrySet()) {
+            ParentDoc[] values = entry.getValue().values().toArray(ParentDoc.class);
             Arrays.sort(values, PARENT_DOC_COMP);
             parentDocs.put(entry.getKey(), values);
             CacheRecycler.pushIntObjectMap(entry.getValue());

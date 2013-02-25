@@ -42,6 +42,8 @@ import org.elasticsearch.search.query.QuerySearchResultProvider;
 import org.elasticsearch.threadpool.ThreadPool;
 import org.elasticsearch.util.ESCollections.IntList;
 
+import com.carrotsearch.hppc.IntArrayList;
+
 import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -213,7 +215,7 @@ public class TransportSearchScrollQueryThenFetchAction extends AbstractComponent
 
         private void executeFetchPhase() {
             sortedShardList = searchPhaseController.sortDocs(queryResults.values());
-            Map<SearchShardTarget, IntList> docIdsToLoad = searchPhaseController.docIdsToLoad(sortedShardList);
+            Map<SearchShardTarget, IntArrayList> docIdsToLoad = searchPhaseController.docIdsToLoad(sortedShardList);
 
             if (docIdsToLoad.isEmpty()) {
                 finishHim();
@@ -221,9 +223,9 @@ public class TransportSearchScrollQueryThenFetchAction extends AbstractComponent
 
             final AtomicInteger counter = new AtomicInteger(docIdsToLoad.size());
 
-            for (final Map.Entry<SearchShardTarget, IntList> entry : docIdsToLoad.entrySet()) {
+            for (final Map.Entry<SearchShardTarget, IntArrayList> entry : docIdsToLoad.entrySet()) {
                 SearchShardTarget shardTarget = entry.getKey();
-                IntList docIds = entry.getValue();
+                IntArrayList docIds = entry.getValue();
                 FetchSearchRequest fetchSearchRequest = new FetchSearchRequest(request, queryResults.get(shardTarget).id(), docIds);
                 DiscoveryNode node = nodes.get(shardTarget.nodeId());
                 searchService.sendExecuteFetch(node, fetchSearchRequest, new SearchServiceListener<FetchSearchResult>() {

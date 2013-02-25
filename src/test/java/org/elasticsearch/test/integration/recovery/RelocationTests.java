@@ -19,6 +19,16 @@
 
 package org.elasticsearch.test.integration.recovery;
 
+import static org.elasticsearch.common.settings.ImmutableSettings.settingsBuilder;
+import static org.elasticsearch.index.query.QueryBuilders.matchAllQuery;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
+
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
+
 import org.elasticsearch.action.admin.cluster.health.ClusterHealthResponse;
 import org.elasticsearch.action.bulk.BulkItemResponse;
 import org.elasticsearch.action.bulk.BulkRequestBuilder;
@@ -33,20 +43,10 @@ import org.elasticsearch.index.shard.ShardId;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.SearchHits;
 import org.elasticsearch.test.integration.AbstractNodesTests;
-import org.elasticsearch.util.ESCollections;
-import org.elasticsearch.util.ESCollections.IntSet;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.Test;
 
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicLong;
-
-import static org.elasticsearch.common.settings.ImmutableSettings.settingsBuilder;
-import static org.elasticsearch.index.query.QueryBuilders.matchAllQuery;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.equalTo;
+import com.carrotsearch.hppc.IntOpenHashSet;
 
 /**
  */
@@ -249,7 +249,8 @@ public class RelocationTests extends AbstractNodesTests {
                     for (int hit = 0; hit < indexCounter.get(); hit++) {
                         hitIds[hit] = hit + 1;
                     }
-                    IntSet set = ESCollections.newIntSet(hitIds);
+                    IntOpenHashSet set = new IntOpenHashSet(hitIds.length);
+                    set.add(hitIds);
                     for (SearchHit hit : hits.hits()) {
                         int id = Integer.parseInt(hit.id());
                         if (!set.remove(id)) {
@@ -430,7 +431,9 @@ public class RelocationTests extends AbstractNodesTests {
                     for (int hit = 0; hit < indexCounter.get(); hit++) {
                         hitIds[hit] = hit + 1;
                     }
-                    IntSet set = ESCollections.newIntSet(hitIds);
+                    IntOpenHashSet set = new IntOpenHashSet(hitIds.length);
+                    set.add(hitIds);
+                    
                     for (SearchHit hit : hits.hits()) {
                         int id = Integer.parseInt(hit.id());
                         if (!set.remove(id)) {
@@ -442,13 +445,6 @@ public class RelocationTests extends AbstractNodesTests {
                         logger.error("Missing id [{}]", value);
                     }
                     
-//                    set.forEach(new TIntProcedure() {
-//                        @Override
-//                        public boolean execute(int value) {
-//                            logger.error("Missing id [{}]", value);
-//                            return true;
-//                        }
-//                    });
                 }
                 assertThat(hits.totalHits(), equalTo(indexCounter.get()));
                 logger.info("--> DONE search test round {}", i + 1);

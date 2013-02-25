@@ -44,6 +44,8 @@ import org.elasticsearch.search.query.QuerySearchResultProvider;
 import org.elasticsearch.threadpool.ThreadPool;
 import org.elasticsearch.util.ESCollections.IntList;
 
+import com.carrotsearch.hppc.IntArrayList;
+
 import java.util.Arrays;
 import java.util.Map;
 import java.util.Queue;
@@ -329,7 +331,7 @@ public abstract class TransportSearchTypeAction extends TransportAction<SearchRe
          * Releases shard targets that are not used in the docsIdsToLoad.
          */
         protected void releaseIrrelevantSearchContexts(Map<SearchShardTarget, QuerySearchResultProvider> queryResults,
-                                                       Map<SearchShardTarget, IntList> docIdsToLoad) {
+                                                       Map<SearchShardTarget, IntArrayList> docIdsToLoad) {
             if (docIdsToLoad == null) {
                 return;
             }

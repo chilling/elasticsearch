@@ -19,6 +19,7 @@
 
 package org.elasticsearch.gateway.local;
 
+import com.carrotsearch.hppc.ObjectLongOpenHashMap;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import org.elasticsearch.ExceptionsHelper;
@@ -69,7 +70,7 @@ public class LocalGatewayAllocator extends AbstractComponent implements GatewayA
 
     private final ConcurrentMap<ShardId, Map<DiscoveryNode, TransportNodesListShardStoreMetaData.StoreFilesMetaData>> cachedStores = ConcurrentCollections.newConcurrentMap();
 
-    private final ConcurrentMap<ShardId, ObjectLongMap<DiscoveryNode>> cachedShardsState = ConcurrentCollections.newConcurrentMap();
+    private final ConcurrentMap<ShardId, ObjectLongOpenHashMap<DiscoveryNode>> cachedShardsState = ConcurrentCollections.newConcurrentMap();
 
     private final TimeValue listTimeout;
 
@@ -123,15 +124,22 @@ public class LocalGatewayAllocator extends AbstractComponent implements GatewayA
                 continue;
             }
 
-            ObjectLongMap<DiscoveryNode> nodesState = buildShardStates(nodes, shard);
+            ObjectLongOpenHashMap<DiscoveryNode> nodesState = buildShardStates(nodes, shard);
 
             int numberOfAllocationsFound = 0;
             long highestVersion = -1;
             Set<DiscoveryNode> nodesWithHighestVersion = Sets.newHashSet();
-            for (ObjectLongIterator<DiscoveryNode> it = nodesState.longIterator(); it.hasNext(); ) {
-                it.advance();
-                DiscoveryNode node = it.key();
-                long version = it.value();
+            
+            final boolean[] allocated = nodesState.allocated;
+            final DiscoveryNode[] keys = nodesState.keys;
+            final long[] values = nodesState.values;
+            
+            for (int i=0; i<allocated.length; i++) {
+                if(!allocated[i]) {
+                    continue;
+                }
+                DiscoveryNode node = keys[i];
+                long version = values[i];
                 // since we don't check in NO allocation, we need to double check here
                 if (allocation.shouldIgnoreShardForNode(shard.shardId(), node.id())) {
                     continue;
@@ -354,25 +362,27 @@ public class LocalGatewayAllocator extends AbstractComponent implements GatewayA
         return changed;
     }
 
-    private ObjectLongMap<DiscoveryNode> buildShardStates(DiscoveryNodes nodes, MutableShardRouting shard) {
-        ObjectLongMap<DiscoveryNode> shardStates = cachedShardsState.get(shard.shardId());
+    private ObjectLongOpenHashMap<DiscoveryNode> buildShardStates(DiscoveryNodes nodes, MutableShardRouting shard) {
+        ObjectLongOpenHashMap<DiscoveryNode> shardStates = cachedShardsState.get(shard.shardId());
         Set<String> nodeIds;
         if (shardStates == null) {
-            shardStates = ESCollections.newObjectLongMap();
+            shardStates = new ObjectLongOpenHashMap<DiscoveryNode>();
             cachedShardsState.put(shard.shardId(), shardStates);
             nodeIds = nodes.dataNodes().keySet();
         } else {
             // clean nodes that have failed
-            for (ObjectLongIterator<DiscoveryNode> it = shardStates.longIterator(); it.hasNext(); ) {
-                it.advance();
-                if (!nodes.nodeExists(it.key().id())) {
-                    it.remove();
+            final boolean[] allocated = shardStates.allocated;
+            final DiscoveryNode[] keys = shardStates.keys;
+            for(int i=0; i<allocated.length; i++) {
+                if(allocated[i] && !nodes.nodeExists(keys[i].getId())) {
+                    allocated[i] = false;
                 }
             }
+            
             nodeIds = Sets.newHashSet();
             // we have stored cached from before, see if the nodes changed, if they have, go fetch again
             for (DiscoveryNode node : nodes.dataNodes().values()) {
-                if (!shardStates.containsKeyX(node)) {
+                if (!shardStates.containsKey(node)) {
                     nodeIds.add(node.id());
                 }
             }

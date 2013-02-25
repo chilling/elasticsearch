@@ -19,6 +19,7 @@
 
 package org.elasticsearch.index.query;
 
+import com.carrotsearch.hppc.FloatArrayList;
 import com.google.common.collect.Maps;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.util.ESCollections;
@@ -47,7 +48,7 @@ public class CustomFiltersScoreQueryBuilder extends BaseQueryBuilder implements 
 
     private ArrayList<FilterBuilder> filters = new ArrayList<FilterBuilder>();
     private ArrayList<String> scripts = new ArrayList<String>();
-    private FloatList boosts = ESCollections.newFloatList();
+    private FloatArrayList boosts = new FloatArrayList();
 
     public CustomFiltersScoreQueryBuilder(QueryBuilder queryBuilder) {
         this.queryBuilder = queryBuilder;
@@ -56,14 +57,14 @@ public class CustomFiltersScoreQueryBuilder extends BaseQueryBuilder implements 
     public CustomFiltersScoreQueryBuilder add(FilterBuilder filter, String script) {
         this.filters.add(filter);
         this.scripts.add(script);
-        this.boosts.addX(-1);
+        this.boosts.add(-1);
         return this;
     }
 
     public CustomFiltersScoreQueryBuilder add(FilterBuilder filter, float boost) {
         this.filters.add(filter);
         this.scripts.add(null);
-        this.boosts.addX(boost);
+        this.boosts.add(boost);
         return this;
     }
 

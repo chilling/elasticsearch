@@ -22,7 +22,8 @@ package org.elasticsearch.search.fetch;
 import org.elasticsearch.common.io.stream.StreamInput;
 import org.elasticsearch.common.io.stream.StreamOutput;
 import org.elasticsearch.transport.TransportRequest;
-import org.elasticsearch.util.ESCollections.IntList;
+
+import com.carrotsearch.hppc.IntArrayList;
 
 import java.io.IOException;
 
@@ -40,10 +41,10 @@ public class FetchSearchRequest extends TransportRequest {
     public FetchSearchRequest() {
     }
 
-    public FetchSearchRequest(TransportRequest request, long id, IntList list) {
+    public FetchSearchRequest(TransportRequest request, long id, IntArrayList list) {
         super(request);
         this.id = id;
-        this.docIds = list.toArray(new int[list.size()]);
+        this.docIds = list.toArray();
         this.size = list.size();
     }
 

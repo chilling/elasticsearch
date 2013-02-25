@@ -19,6 +19,7 @@
 
 package org.elasticsearch.index.query;
 
+import com.carrotsearch.hppc.ObjectFloatOpenHashMap;
 import com.google.common.collect.Lists;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.util.ESCollections;
@@ -38,7 +39,7 @@ public class MultiMatchQueryBuilder extends BaseQueryBuilder implements Boostabl
     private final Object text;
 
     private final List<String> fields;
-    private ObjectFloatMap<String> fieldsBoosts;
+    private ObjectFloatOpenHashMap<String> fieldsBoosts;
 
     private MatchQueryBuilder.Type type;
 
@@ -93,7 +94,7 @@ public class MultiMatchQueryBuilder extends BaseQueryBuilder implements Boostabl
     public MultiMatchQueryBuilder field(String field, float boost) {
         fields.add(field);
         if (fieldsBoosts == null) {
-            fieldsBoosts = ESCollections.newObjectFloatMap(Constants.DEFAULT_CAPACITY, Constants.DEFAULT_LOAD_FACTOR, -1);
+            fieldsBoosts = new ObjectFloatOpenHashMap(Constants.DEFAULT_CAPACITY, Constants.DEFAULT_LOAD_FACTOR);
         }
         fieldsBoosts.put(field, boost);
         return this;
@@ -215,7 +216,9 @@ public class MultiMatchQueryBuilder extends BaseQueryBuilder implements Boostabl
         for (String field : fields) {
             float boost = -1;
             if (fieldsBoosts != null) {
-                boost = fieldsBoosts.getX(field);
+                if(fieldsBoosts.containsKey(field)) {
+                    boost = fieldsBoosts.lget();                    
+                }
             }
             if (boost != -1) {
                 field += "^" + boost;

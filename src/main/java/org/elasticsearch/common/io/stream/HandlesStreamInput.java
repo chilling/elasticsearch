@@ -20,8 +20,8 @@
 package org.elasticsearch.common.io.stream;
 
 import org.elasticsearch.common.text.Text;
-import org.elasticsearch.util.ESCollections;
-import org.elasticsearch.util.ESCollections.IntObjectMap;
+
+import com.carrotsearch.hppc.IntObjectOpenHashMap;
 
 import java.io.IOException;
 
@@ -30,10 +30,10 @@ import java.io.IOException;
  */
 public class HandlesStreamInput extends AdapterStreamInput {
 
-    private final IntObjectMap<String> handles = ESCollections.newIntObjectMap();
-    private final IntObjectMap<String> identityHandles = ESCollections.newIntObjectMap();
+    private final IntObjectOpenHashMap<String> handles = new IntObjectOpenHashMap<String>();
+    private final IntObjectOpenHashMap<String> identityHandles =  new IntObjectOpenHashMap<String>();
 
-    private final IntObjectMap<Text> handlesText = ESCollections.newIntObjectMap();
+    private final IntObjectOpenHashMap<Text> handlesText = new IntObjectOpenHashMap<Text>();
 
     HandlesStreamInput() {
         super();

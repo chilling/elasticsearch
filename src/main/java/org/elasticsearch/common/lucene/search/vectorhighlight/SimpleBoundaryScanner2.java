@@ -1,8 +1,8 @@
 package org.elasticsearch.common.lucene.search.vectorhighlight;
 
 import org.apache.lucene.search.vectorhighlight.BoundaryScanner;
-import org.elasticsearch.util.ESCollections;
-import org.elasticsearch.util.ESCollections.CharSet;
+
+import com.carrotsearch.hppc.CharOpenHashSet;
 
 /**
  * A copy of Lucene {@link org.apache.lucene.search.vectorhighlight.SimpleBoundaryScanner}.
@@ -19,7 +19,7 @@ public class SimpleBoundaryScanner2 implements BoundaryScanner {
     public static final SimpleBoundaryScanner2 DEFAULT = new SimpleBoundaryScanner2();
 
     public int maxScan;
-    public CharSet boundaryChars;
+    public CharOpenHashSet boundaryChars;
 
     public SimpleBoundaryScanner2() {
         this(DEFAULT_MAX_SCAN, DEFAULT_BOUNDARY_CHARS);
@@ -27,7 +27,8 @@ public class SimpleBoundaryScanner2 implements BoundaryScanner {
 
     public SimpleBoundaryScanner2(int maxScan, char[] boundaryChars) {
         this.maxScan = maxScan;
-        this.boundaryChars = ESCollections.newCharSet(boundaryChars);
+        this.boundaryChars = new CharOpenHashSet();
+        this.boundaryChars.add(boundaryChars);
     }
 
     public int findStartOffset(StringBuilder buffer, int start) {

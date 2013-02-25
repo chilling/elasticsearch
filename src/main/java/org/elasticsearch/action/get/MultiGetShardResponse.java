@@ -25,30 +25,32 @@ import org.elasticsearch.common.io.stream.StreamOutput;
 import org.elasticsearch.util.ESCollections;
 import org.elasticsearch.util.ESCollections.IntList;
 
+import com.carrotsearch.hppc.IntArrayList;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
 public class MultiGetShardResponse extends ActionResponse {
 
-    IntList locations;
+    IntArrayList locations;
     List<GetResponse> responses;
     List<MultiGetResponse.Failure> failures;
 
     MultiGetShardResponse() {
-        locations = ESCollections.newIntList();
+        locations = new IntArrayList();
         responses = new ArrayList<GetResponse>();
         failures = new ArrayList<MultiGetResponse.Failure>();
     }
 
     public void add(int location, GetResponse response) {
-        locations.addX(location);
+        locations.add(location);
         responses.add(response);
         failures.add(null);
     }
 
     public void add(int location, MultiGetResponse.Failure failure) {
-        locations.addX(location);
+        locations.add(location);
         responses.add(null);
         failures.add(failure);
     }
@@ -57,11 +59,11 @@ public class MultiGetShardResponse extends ActionResponse {
     public void readFrom(StreamInput in) throws IOException {
         super.readFrom(in);
         int size = in.readVInt();
-        locations = ESCollections.newIntList(size);
+        locations = new IntArrayList(size);
         responses = new ArrayList<GetResponse>(size);
         failures = new ArrayList<MultiGetResponse.Failure>(size);
         for (int i = 0; i < size; i++) {
-            locations.addX(in.readVInt());
+            locations.add(in.readVInt());
             if (in.readBoolean()) {
                 GetResponse response = new GetResponse();
                 response.readFrom(in);

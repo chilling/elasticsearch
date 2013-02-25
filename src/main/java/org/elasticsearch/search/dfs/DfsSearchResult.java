@@ -30,6 +30,8 @@ import org.elasticsearch.search.SearchShardTarget;
 import org.elasticsearch.transport.TransportResponse;
 import org.elasticsearch.util.ESCollections;
 
+import com.carrotsearch.hppc.ObjectObjectOpenHashMap;
+
 import java.io.IOException;
 import java.util.Map;
 
@@ -45,7 +47,7 @@ public class DfsSearchResult extends TransportResponse implements SearchPhaseRes
     private long id;
     private Term[] terms;
     private TermStatistics[] termStatistics;
-    private Map<String, CollectionStatistics> fieldStatistics = ESCollections.newMap();
+    private ObjectObjectOpenHashMap<String, CollectionStatistics> fieldStatistics = new ObjectObjectOpenHashMap<String, CollectionStatistics>();
     private int maxDoc;
 
     public DfsSearchResult() {
@@ -85,7 +87,7 @@ public class DfsSearchResult extends TransportResponse implements SearchPhaseRes
         return this;
     }
 
-    public DfsSearchResult fieldStatistics(Map<String, CollectionStatistics> fieldStatistics) {
+    public DfsSearchResult fieldStatistics(ObjectObjectOpenHashMap<String, CollectionStatistics> fieldStatistics) {
         this.fieldStatistics = fieldStatistics;
         return this;
     }
@@ -98,7 +100,7 @@ public class DfsSearchResult extends TransportResponse implements SearchPhaseRes
         return termStatistics;
     }
 
-    public Map<String, CollectionStatistics> fieldStatistics() {
+    public ObjectObjectOpenHashMap<String, CollectionStatistics> fieldStatistics() {
         return fieldStatistics;
     }
 
@@ -160,12 +162,19 @@ public class DfsSearchResult extends TransportResponse implements SearchPhaseRes
             out.writeVLong(termStatistic.totalTermFreq());
         }
         out.writeVInt(fieldStatistics.size());
-        for (Map.Entry<String, CollectionStatistics> entry : fieldStatistics.entrySet()) {
-            out.writeString(entry.getKey());
-            out.writeVLong(entry.getValue().maxDoc());
-            out.writeVLong(entry.getValue().docCount());
-            out.writeVLong(entry.getValue().sumTotalTermFreq());
-            out.writeVLong(entry.getValue().sumDocFreq());
+        
+        final boolean[] allocated = fieldStatistics.allocated;
+        final String[] keys = fieldStatistics.keys;
+        final CollectionStatistics[] values = fieldStatistics.values;
+        
+        for (int i=0; i<allocated.length;) {
+            if(allocated[i]) {
+                out.writeString(keys[i]);
+                out.writeVLong(values[i].maxDoc());
+                out.writeVLong(values[i].docCount());
+                out.writeVLong(values[i].sumTotalTermFreq());
+                out.writeVLong(values[i].sumDocFreq());
+            }
         }
         out.writeVInt(maxDoc);
     }

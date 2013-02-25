@@ -22,7 +22,6 @@ package org.elasticsearch.common;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import org.elasticsearch.common.io.FastStringReader;
-import org.elasticsearch.util.ESCollections;
 
 import java.io.BufferedReader;
 import java.util.*;
@@ -1009,7 +1008,7 @@ public class Strings {
             }
         }
         
-        final Set<String> result = ESCollections.newSet(count);
+        final HashSet<String> result = new HashSet<String>(count);
         
         final int len = chars.length;
         int start = 0;  // starting index in chars of the current substring.

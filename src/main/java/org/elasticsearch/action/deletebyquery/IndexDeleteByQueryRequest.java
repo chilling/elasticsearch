@@ -19,6 +19,12 @@
 
 package org.elasticsearch.action.deletebyquery;
 
+import static org.elasticsearch.action.ValidateActions.addValidationError;
+
+import java.io.IOException;
+import java.util.HashSet;
+import java.util.Set;
+
 import org.elasticsearch.action.ActionRequestValidationException;
 import org.elasticsearch.action.support.replication.IndexReplicationOperationRequest;
 import org.elasticsearch.common.Nullable;
@@ -27,12 +33,6 @@ import org.elasticsearch.common.bytes.BytesReference;
 import org.elasticsearch.common.io.stream.StreamInput;
 import org.elasticsearch.common.io.stream.StreamOutput;
 import org.elasticsearch.common.unit.TimeValue;
-import org.elasticsearch.util.ESCollections;
-
-import java.io.IOException;
-import java.util.Set;
-
-import static org.elasticsearch.action.ValidateActions.addValidationError;
 
 /**
  * Delete by query request to execute on a specific index.
@@ -102,7 +102,7 @@ public class IndexDeleteByQueryRequest extends IndexReplicationOperationRequest<
         }
         int routingSize = in.readVInt();
         if (routingSize > 0) {
-            routing = ESCollections.newSet(routingSize);
+            routing = new HashSet<String>(routingSize);
             for (int i = 0; i < routingSize; i++) {
                 routing.add(in.readString());
             }
@@ -125,8 +125,9 @@ public class IndexDeleteByQueryRequest extends IndexReplicationOperationRequest<
         }
         if (routing != null) {
             out.writeVInt(routing.size());
-            for (String r : routing) {
-                out.writeString(r);
+            
+            for (String key : routing) {
+                out.writeString(key);
             }
         } else {
             out.writeVInt(0);

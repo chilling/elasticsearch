@@ -19,6 +19,8 @@
 
 package org.elasticsearch.search.controller;
 
+import com.carrotsearch.hppc.IntArrayList;
+import com.carrotsearch.hppc.ObjectObjectOpenHashMap;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -45,8 +47,6 @@ import org.elasticsearch.search.internal.InternalSearchResponse;
 import org.elasticsearch.search.query.QuerySearchResult;
 import org.elasticsearch.search.query.QuerySearchResultProvider;
 import org.elasticsearch.search.suggest.Suggest;
-import org.elasticsearch.util.ESCollections;
-import org.elasticsearch.util.ESCollections.IntList;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -84,8 +84,8 @@ public class SearchPhaseController extends AbstractComponent {
     }
 
     public AggregatedDfs aggregateDfs(Iterable<DfsSearchResult> results) {
-        Map<Term, TermStatistics> termStatistics = ESCollections.newMap();
-        Map<String, CollectionStatistics> fieldStatistics = ESCollections.newMap();
+        ObjectObjectOpenHashMap<Term, TermStatistics> termStatistics = new ObjectObjectOpenHashMap<Term, TermStatistics>();
+        ObjectObjectOpenHashMap<String, CollectionStatistics> fieldStatistics = new ObjectObjectOpenHashMap<String, CollectionStatistics>();
         long aggMaxDoc = 0;
         for (DfsSearchResult result : results) {
             for (int i = 0; i < result.termStatistics().length; i++) {
@@ -97,18 +97,25 @@ public class SearchPhaseController extends AbstractComponent {
                 }
 
             }
-            for (Map.Entry<String, CollectionStatistics> entry : result.fieldStatistics().entrySet()) {
-                CollectionStatistics existing = fieldStatistics.get(entry.getKey());
-                if (existing != null) {
-                    CollectionStatistics merged = new CollectionStatistics(
-                            entry.getKey(), existing.maxDoc() + entry.getValue().maxDoc(),
-                            existing.docCount() + entry.getValue().docCount(),
-                            existing.sumTotalTermFreq() + entry.getValue().sumTotalTermFreq(),
-                            existing.sumDocFreq() + entry.getValue().sumDocFreq()
-                    );
-                    fieldStatistics.put(entry.getKey(), merged);
-                } else {
-                    fieldStatistics.put(entry.getKey(), entry.getValue());
+            
+            final boolean[] allocated = result.fieldStatistics().allocated;
+            final String[] keys = result.fieldStatistics().keys;
+            final CollectionStatistics[] values = result.fieldStatistics().values;
+            
+            for (int i = 0; i<allocated.length; i++) {
+                if(allocated[i]) {
+                    CollectionStatistics existing = fieldStatistics.get(keys[i]);
+                    if (existing != null) {
+                        CollectionStatistics merged = new CollectionStatistics(
+                                keys[i], existing.maxDoc() + values[i].maxDoc(),
+                                existing.docCount() + values[i].docCount(),
+                                existing.sumTotalTermFreq() + values[i].sumTotalTermFreq(),
+                                existing.sumDocFreq() + values[i].sumDocFreq()
+                        );
+                        fieldStatistics.put(keys[i], merged);
+                    } else {
+                        fieldStatistics.put(keys[i], values[i]);
+                    }
                 }
             }
             aggMaxDoc += result.maxDoc();
@@ -260,15 +267,15 @@ public class SearchPhaseController extends AbstractComponent {
         return shardDocs;
     }
 
-    public Map<SearchShardTarget, IntList> docIdsToLoad(ShardDoc[] shardDocs) {
-        Map<SearchShardTarget, IntList> result = Maps.newHashMap();
+    public Map<SearchShardTarget, IntArrayList> docIdsToLoad(ShardDoc[] shardDocs) {
+        Map<SearchShardTarget, IntArrayList> result = Maps.newHashMap();
         for (ShardDoc shardDoc : shardDocs) {
-            IntList list = result.get(shardDoc.shardTarget());
+            IntArrayList list = result.get(shardDoc.shardTarget());
             if (list == null) {
-                list = ESCollections.newIntList(); // can't be shared!, uses unsafe on it later on
+                list = new IntArrayList(); // can't be shared!, uses unsafe on it later on
                 result.put(shardDoc.shardTarget(), list);
             }
-            list.addX(shardDoc.docId());
+            list.add(shardDoc.docId());
         }
         return result;
     }

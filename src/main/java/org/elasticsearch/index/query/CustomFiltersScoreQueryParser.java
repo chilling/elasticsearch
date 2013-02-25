@@ -31,6 +31,8 @@ import org.elasticsearch.script.SearchScript;
 import org.elasticsearch.util.ESCollections;
 import org.elasticsearch.util.ESCollections.FloatList;
 
+import com.carrotsearch.hppc.FloatArrayList;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Map;
@@ -65,7 +67,7 @@ public class CustomFiltersScoreQueryParser implements QueryParser {
         ArrayList<Filter> filters = new ArrayList<Filter>();
         boolean filtersFound = false;
         ArrayList<String> scripts = new ArrayList<String>();
-        FloatList boosts = ESCollections.newFloatList();
+        FloatArrayList boosts = new FloatArrayList();
         float maxBoost = Float.MAX_VALUE;
 
         String currentFieldName = null;
@@ -115,7 +117,7 @@ public class CustomFiltersScoreQueryParser implements QueryParser {
                         if (filter != null) {
                             filters.add(filter);
                             scripts.add(script);
-                            boosts.addX(fboost);
+                            boosts.add(fboost);
                         }
                     }
                 } else {

@@ -17,8 +17,8 @@
 
 package org.elasticsearch.common.geo;
 
-import org.elasticsearch.util.ESCollections;
-import org.elasticsearch.util.ESCollections.IntIntMap;
+import com.carrotsearch.hppc.IntIntMap;
+import com.carrotsearch.hppc.IntIntOpenHashMap;
 
 /**
  * Utilities for encoding and decoding geohashes. Based on
@@ -34,7 +34,7 @@ public class GeoHashUtils {
 
 //    private final static Map<Character, Integer> DECODE_MAP = new HashMap<Character, Integer>();
 
-    private final static IntIntMap DECODE_MAP = ESCollections.newIntIntMap();
+    private final static IntIntMap DECODE_MAP = new IntIntOpenHashMap();
 
     public static final int PRECISION = 12;
     private static final int[] BITS = {16, 8, 4, 2, 1};

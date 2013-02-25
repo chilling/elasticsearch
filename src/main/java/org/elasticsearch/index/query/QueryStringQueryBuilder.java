@@ -19,15 +19,15 @@
 
 package org.elasticsearch.index.query;
 
-import org.elasticsearch.common.xcontent.XContentBuilder;
-import org.elasticsearch.util.ESCollections;
-import org.elasticsearch.util.ESCollections.Constants;
-import org.elasticsearch.util.ESCollections.ObjectFloatMap;
+import static com.google.common.collect.Lists.newArrayList;
 
 import java.io.IOException;
 import java.util.List;
 
-import static com.google.common.collect.Lists.newArrayList;
+import org.elasticsearch.common.xcontent.XContentBuilder;
+import org.elasticsearch.util.ESCollections.Constants;
+
+import com.carrotsearch.hppc.ObjectFloatOpenHashMap;
 
 /**
  * A query that parses a query string and runs it. There are two modes that this operates. The first,
@@ -78,7 +78,7 @@ public class QueryStringQueryBuilder extends BaseQueryBuilder implements Boostab
 
     private List<String> fields;
 
-    private ObjectFloatMap<String> fieldsBoosts;
+    private ObjectFloatOpenHashMap<String> fieldsBoosts;
 
     private Boolean useDisMax;
 
@@ -123,7 +123,7 @@ public class QueryStringQueryBuilder extends BaseQueryBuilder implements Boostab
         }
         fields.add(field);
         if (fieldsBoosts == null) {
-            fieldsBoosts = ESCollections.newObjectFloatMap(Constants.DEFAULT_CAPACITY, Constants.DEFAULT_LOAD_FACTOR, -1);
+            fieldsBoosts = new ObjectFloatOpenHashMap<String>(Constants.DEFAULT_CAPACITY, Constants.DEFAULT_LOAD_FACTOR);
         }
         fieldsBoosts.put(field, boost);
         return this;
@@ -315,7 +315,9 @@ public class QueryStringQueryBuilder extends BaseQueryBuilder implements Boostab
             for (String field : fields) {
                 float boost = -1;
                 if (fieldsBoosts != null) {
-                    boost = fieldsBoosts.getX(field);
+                    if(fieldsBoosts.containsKey(field)) {
+                        boost = fieldsBoosts.lget();
+                    }
                 }
                 if (boost != -1) {
                     field += "^" + boost;
