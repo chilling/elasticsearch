@@ -19,6 +19,7 @@
 
 package org.elasticsearch.search.facet.terms.strings;
 
+import com.carrotsearch.hppc.ObjectIntOpenHashMap;
 import com.google.common.collect.ImmutableList;
 import gnu.trove.iterator.TObjectIntIterator;
 import gnu.trove.map.hash.TObjectIntHashMap;
@@ -171,7 +172,7 @@ public class InternalStringTermsFacet extends InternalTermsFacet {
             return facets.get(0);
         }
         InternalStringTermsFacet first = (InternalStringTermsFacet) facets.get(0);
-        TObjectIntHashMap<Text> aggregated = CacheRecycler.popObjectIntMap();
+        ObjectIntOpenHashMap<Text> aggregated = CacheRecycler.popObjectIntMap();
         long missing = 0;
         long total = 0;
         for (Facet facet : facets) {
@@ -179,7 +180,7 @@ public class InternalStringTermsFacet extends InternalTermsFacet {
             missing += mFacet.getMissingCount();
             total += mFacet.getTotalCount();
             for (TermEntry entry : mFacet.entries) {
-                aggregated.adjustOrPutValue(entry.getTerm(), entry.getCount(), entry.getCount());
+                aggregated.putOrAdd(entry.getTerm(), entry.getCount(), entry.getCount());
             }
         }
 

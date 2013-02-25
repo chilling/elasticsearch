@@ -19,6 +19,7 @@
 
 package org.elasticsearch.search.facet.termsstats.longs;
 
+import com.carrotsearch.hppc.LongObjectOpenHashMap;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import org.apache.lucene.index.AtomicReaderContext;
@@ -49,7 +50,7 @@ public class TermsStatsLongFacetExecutor extends FacetExecutor {
     private final int size;
     private final int numberOfShards;
 
-    final ExtTLongObjectHashMap<InternalTermsStatsLongFacet.LongEntry> entries;
+    final LongObjectOpenHashMap<InternalTermsStatsLongFacet.LongEntry> entries;
     long missing;
 
     public TermsStatsLongFacetExecutor(IndexNumericFieldData keyIndexFieldData, IndexNumericFieldData valueIndexFieldData, SearchScript script,
@@ -80,7 +81,7 @@ public class TermsStatsLongFacetExecutor extends FacetExecutor {
         }
 
         // we need to fetch facets of "size * numberOfShards" because of problems in how they are distributed across shards
-        Object[] values = entries.internalValues();
+        Object[] values = entries.values().toArray();
         Arrays.sort(values, (Comparator) comparatorType.comparator());
 
         int limit = size;
@@ -139,12 +140,12 @@ public class TermsStatsLongFacetExecutor extends FacetExecutor {
 
     public static class Aggregator implements LongValues.ValueInDocProc {
 
-        final ExtTLongObjectHashMap<InternalTermsStatsLongFacet.LongEntry> entries;
+        final LongObjectOpenHashMap<InternalTermsStatsLongFacet.LongEntry> entries;
         int missing;
         DoubleValues valueValues;
         final ValueAggregator valueAggregator = new ValueAggregator();
 
-        public Aggregator(ExtTLongObjectHashMap<InternalTermsStatsLongFacet.LongEntry> entries) {
+        public Aggregator(LongObjectOpenHashMap<InternalTermsStatsLongFacet.LongEntry> entries) {
             this.entries = entries;
         }
 
@@ -191,7 +192,7 @@ public class TermsStatsLongFacetExecutor extends FacetExecutor {
 
         private final SearchScript script;
 
-        public ScriptAggregator(ExtTLongObjectHashMap<InternalTermsStatsLongFacet.LongEntry> entries, SearchScript script) {
+        public ScriptAggregator(LongObjectOpenHashMap<InternalTermsStatsLongFacet.LongEntry> entries, SearchScript script) {
             super(entries);
             this.script = script;
         }

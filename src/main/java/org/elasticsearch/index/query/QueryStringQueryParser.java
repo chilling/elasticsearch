@@ -19,11 +19,12 @@
 
 package org.elasticsearch.index.query;
 
-import com.carrotsearch.hppc.ObjectFloatOpenHashMap;
-import com.google.common.collect.Lists;
+import static org.elasticsearch.common.lucene.search.Queries.fixNegativeQueryIfNeeded;
+import static org.elasticsearch.common.lucene.search.Queries.optimizeQuery;
+
+import java.io.IOException;
 
 import org.apache.lucene.queryparser.classic.MapperQueryParser;
-import org.apache.lucene.queryparser.classic.ParseException;
 import org.apache.lucene.queryparser.classic.QueryParserSettings;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.Query;
@@ -35,14 +36,9 @@ import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.xcontent.XContentParser;
 import org.elasticsearch.index.analysis.NamedAnalyzer;
 import org.elasticsearch.index.query.support.QueryParsers;
-import org.elasticsearch.util.ESCollections;
-import org.elasticsearch.util.ESCollections.Constants;
-import org.elasticsearch.util.ESCollections.ObjectFloatMap;
 
-import java.io.IOException;
-
-import static org.elasticsearch.common.lucene.search.Queries.fixNegativeQueryIfNeeded;
-import static org.elasticsearch.common.lucene.search.Queries.optimizeQuery;
+import com.carrotsearch.hppc.ObjectFloatOpenHashMap;
+import com.google.common.collect.Lists;
 
 /**
  *
@@ -107,7 +103,7 @@ public class QueryStringQueryParser implements QueryParser {
                                 qpSettings.fields().add(field);
                                 if (fBoost != -1) {
                                     if (qpSettings.boosts() == null) {
-                                        ObjectFloatOpenHashMap<String> map = new ObjectFloatOpenHashMap<String>(Constants.DEFAULT_CAPACITY, Constants.DEFAULT_LOAD_FACTOR);
+                                        ObjectFloatOpenHashMap<String> map = new ObjectFloatOpenHashMap<String>(ObjectFloatOpenHashMap.DEFAULT_CAPACITY, ObjectFloatOpenHashMap.DEFAULT_LOAD_FACTOR);
                                         qpSettings.boosts(map);
                                     }
                                     qpSettings.boosts().put(field, fBoost);
@@ -117,7 +113,7 @@ public class QueryStringQueryParser implements QueryParser {
                             qpSettings.fields().add(fField);
                             if (fBoost != -1) {
                                 if (qpSettings.boosts() == null) {
-                                    ObjectFloatOpenHashMap<String> map = new ObjectFloatOpenHashMap(Constants.DEFAULT_CAPACITY, Constants.DEFAULT_LOAD_FACTOR);
+                                    ObjectFloatOpenHashMap<String> map = new ObjectFloatOpenHashMap<String>(ObjectFloatOpenHashMap.DEFAULT_CAPACITY, ObjectFloatOpenHashMap.DEFAULT_LOAD_FACTOR);
                                     qpSettings.boosts(map);
                                 }
                                 qpSettings.boosts().put(fField, fBoost);

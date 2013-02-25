@@ -19,6 +19,7 @@
 
 package org.elasticsearch.search.facet.termsstats.doubles;
 
+import com.carrotsearch.hppc.DoubleObjectOpenHashMap;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import org.apache.lucene.index.AtomicReaderContext;
@@ -49,7 +50,7 @@ public class TermsStatsDoubleFacetExecutor extends FacetExecutor {
     private final int size;
     private final int numberOfShards;
 
-    final ExtTDoubleObjectHashMap<InternalTermsStatsDoubleFacet.DoubleEntry> entries;
+    final DoubleObjectOpenHashMap<InternalTermsStatsDoubleFacet.DoubleEntry> entries;
     long missing;
 
     public TermsStatsDoubleFacetExecutor(IndexNumericFieldData keyIndexFieldData, IndexNumericFieldData valueIndexFieldData, SearchScript script,
@@ -78,7 +79,7 @@ public class TermsStatsDoubleFacetExecutor extends FacetExecutor {
             // all terms, just return the collection, we will sort it on the way back
             return new InternalTermsStatsDoubleFacet(facetName, comparatorType, 0 /* indicates all terms*/, entries.valueCollection(), missing);
         }
-        Object[] values = entries.internalValues();
+        Object[] values = entries.values().toArray();
         Arrays.sort(values, (Comparator) comparatorType.comparator());
 
         int limit = size;
@@ -138,12 +139,12 @@ public class TermsStatsDoubleFacetExecutor extends FacetExecutor {
 
     public static class Aggregator implements DoubleValues.ValueInDocProc {
 
-        final ExtTDoubleObjectHashMap<InternalTermsStatsDoubleFacet.DoubleEntry> entries;
+        final DoubleObjectOpenHashMap<InternalTermsStatsDoubleFacet.DoubleEntry> entries;
         int missing;
         DoubleValues valueFieldData;
         final ValueAggregator valueAggregator = new ValueAggregator();
 
-        public Aggregator(ExtTDoubleObjectHashMap<InternalTermsStatsDoubleFacet.DoubleEntry> entries) {
+        public Aggregator(DoubleObjectOpenHashMap<InternalTermsStatsDoubleFacet.DoubleEntry> entries) {
             this.entries = entries;
         }
 
@@ -190,7 +191,7 @@ public class TermsStatsDoubleFacetExecutor extends FacetExecutor {
 
         private final SearchScript script;
 
-        public ScriptAggregator(ExtTDoubleObjectHashMap<InternalTermsStatsDoubleFacet.DoubleEntry> entries, SearchScript script) {
+        public ScriptAggregator(DoubleObjectOpenHashMap<InternalTermsStatsDoubleFacet.DoubleEntry> entries, SearchScript script) {
             super(entries);
             this.script = script;
         }

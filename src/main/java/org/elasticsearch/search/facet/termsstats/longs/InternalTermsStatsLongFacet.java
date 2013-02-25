@@ -19,6 +19,7 @@
 
 package org.elasticsearch.search.facet.termsstats.longs;
 
+import com.carrotsearch.hppc.LongObjectOpenHashMap;
 import com.google.common.collect.ImmutableList;
 import org.elasticsearch.common.CacheRecycler;
 import org.elasticsearch.common.io.stream.StreamInput;
@@ -178,7 +179,7 @@ public class InternalTermsStatsLongFacet extends InternalTermsStatsFacet {
             return facets.get(0);
         }
         int missing = 0;
-        ExtTLongObjectHashMap<LongEntry> map = CacheRecycler.popLongObjectMap();
+        LongObjectOpenHashMap<LongEntry> map = CacheRecycler.popLongObjectMap();
         for (Facet facet : facets) {
             InternalTermsStatsLongFacet tsFacet = (InternalTermsStatsLongFacet) facet;
             missing += tsFacet.missing;
@@ -203,12 +204,12 @@ public class InternalTermsStatsLongFacet extends InternalTermsStatsFacet {
 
         // sort
         if (requiredSize == 0) { // all terms
-            LongEntry[] entries1 = map.values(new LongEntry[map.size()]);
+            LongEntry[] entries1 = map.values().toArray(LongEntry.class);
             Arrays.sort(entries1, comparatorType.comparator());
             CacheRecycler.pushLongObjectMap(map);
             return new InternalTermsStatsLongFacet(getName(), comparatorType, requiredSize, Arrays.asList(entries1), missing);
         } else {
-            Object[] values = map.internalValues();
+            Object[] values = map.values().toArray();
             Arrays.sort(values, (Comparator) comparatorType.comparator());
             List<LongEntry> ordered = new ArrayList<LongEntry>(map.size());
             for (int i = 0; i < requiredSize; i++) {

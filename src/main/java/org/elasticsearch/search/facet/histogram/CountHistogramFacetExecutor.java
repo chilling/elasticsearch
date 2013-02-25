@@ -28,6 +28,8 @@ import org.elasticsearch.search.facet.FacetExecutor;
 import org.elasticsearch.search.facet.InternalFacet;
 import org.elasticsearch.search.internal.SearchContext;
 
+import com.carrotsearch.hppc.LongLongOpenHashMap;
+
 import java.io.IOException;
 
 /**
@@ -40,7 +42,7 @@ public class CountHistogramFacetExecutor extends FacetExecutor {
     private final HistogramFacet.ComparatorType comparatorType;
     final long interval;
 
-    final TLongLongHashMap counts;
+    final LongLongOpenHashMap counts;
 
     public CountHistogramFacetExecutor(IndexNumericFieldData indexFieldData, long interval, HistogramFacet.ComparatorType comparatorType, SearchContext context) {
         this.comparatorType = comparatorType;
@@ -91,9 +93,9 @@ public class CountHistogramFacetExecutor extends FacetExecutor {
     public static class HistogramProc implements DoubleValues.ValueInDocProc {
 
         private final long interval;
-        private final TLongLongHashMap counts;
+        private final LongLongOpenHashMap counts;
 
-        public HistogramProc(long interval, TLongLongHashMap counts) {
+        public HistogramProc(long interval, LongLongOpenHashMap counts) {
             this.interval = interval;
             this.counts = counts;
         }
@@ -105,10 +107,10 @@ public class CountHistogramFacetExecutor extends FacetExecutor {
         @Override
         public void onValue(int docId, double value) {
             long bucket = bucket(value, interval);
-            counts.adjustOrPutValue(bucket, 1, 1);
+            counts.putOrAdd(bucket, 1, 1);
         }
 
-        public TLongLongHashMap counts() {
+        public LongLongOpenHashMap counts() {
             return counts;
         }
     }

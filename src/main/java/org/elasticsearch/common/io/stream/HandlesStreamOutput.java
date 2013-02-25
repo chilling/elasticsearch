@@ -20,15 +20,12 @@
 package org.elasticsearch.common.io.stream;
 
 
-import org.elasticsearch.common.text.Text;
-import org.elasticsearch.util.ESCollections;
-import org.elasticsearch.util.ESCollections.Constants;
-import org.elasticsearch.util.ESCollections.ObjectIntMap;
-
-import com.carrotsearch.hppc.ObjectIntOpenHashMap;
-
 import java.io.IOException;
 import java.util.Arrays;
+
+import org.elasticsearch.common.text.Text;
+
+import com.carrotsearch.hppc.ObjectIntOpenHashMap;
 
 /**
  *
@@ -40,10 +37,10 @@ public class HandlesStreamOutput extends AdapterStreamOutput {
     // a threshold above which strings will use identity check
     private final int identityThreshold;
 
-    private final ObjectIntOpenHashMap<String> handles = new ObjectIntOpenHashMap<String>(Constants.DEFAULT_CAPACITY, Constants.DEFAULT_LOAD_FACTOR);
+    private final ObjectIntOpenHashMap<String> handles = new ObjectIntOpenHashMap<String>();
     private final HandleTable identityHandles = new HandleTable(10, (float) 3.00);
 
-    private final ObjectIntOpenHashMap<Text> handlesText = new ObjectIntOpenHashMap<Text>(Constants.DEFAULT_CAPACITY, Constants.DEFAULT_LOAD_FACTOR);
+    private final ObjectIntOpenHashMap<Text> handlesText = new ObjectIntOpenHashMap<Text>();
 
     public HandlesStreamOutput(StreamOutput out) {
         this(out, DEFAULT_IDENTITY_THRESHOLD);

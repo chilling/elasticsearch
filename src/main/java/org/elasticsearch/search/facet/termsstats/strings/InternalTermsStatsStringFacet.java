@@ -19,7 +19,16 @@
 
 package org.elasticsearch.search.facet.termsstats.strings;
 
-import com.google.common.collect.ImmutableList;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+
 import org.elasticsearch.common.CacheRecycler;
 import org.elasticsearch.common.bytes.BytesArray;
 import org.elasticsearch.common.io.stream.StreamInput;
@@ -27,14 +36,12 @@ import org.elasticsearch.common.io.stream.StreamOutput;
 import org.elasticsearch.common.lucene.HashedBytesRef;
 import org.elasticsearch.common.text.BytesText;
 import org.elasticsearch.common.text.Text;
-import org.elasticsearch.common.trove.ExtTHashMap;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.common.xcontent.XContentBuilderString;
 import org.elasticsearch.search.facet.Facet;
 import org.elasticsearch.search.facet.termsstats.InternalTermsStatsFacet;
 
-import java.io.IOException;
-import java.util.*;
+import com.google.common.collect.ImmutableList;
 
 public class InternalTermsStatsStringFacet extends InternalTermsStatsFacet {
 
@@ -183,7 +190,7 @@ public class InternalTermsStatsStringFacet extends InternalTermsStatsFacet {
             return facets.get(0);
         }
         int missing = 0;
-        ExtTHashMap<Text, StringEntry> map = CacheRecycler.popHashMap();
+        Map<Text, StringEntry> map = CacheRecycler.popHashMap();
         for (Facet facet : facets) {
             InternalTermsStatsStringFacet tsFacet = (InternalTermsStatsStringFacet) facet;
             missing += tsFacet.missing;
@@ -213,7 +220,7 @@ public class InternalTermsStatsStringFacet extends InternalTermsStatsFacet {
             CacheRecycler.pushHashMap(map);
             return new InternalTermsStatsStringFacet(getName(), comparatorType, requiredSize, Arrays.asList(entries1), missing);
         } else {
-            Object[] values = map.internalValues();
+            Object[] values = map.values().toArray();
             Arrays.sort(values, (Comparator) comparatorType.comparator());
             List<StringEntry> ordered = new ArrayList<StringEntry>(map.size());
             for (int i = 0; i < requiredSize; i++) {

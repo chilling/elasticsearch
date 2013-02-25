@@ -19,6 +19,10 @@
 
 package org.elasticsearch.index.query;
 
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Map;
+
 import org.apache.lucene.search.Filter;
 import org.apache.lucene.search.Query;
 import org.elasticsearch.common.Strings;
@@ -28,14 +32,8 @@ import org.elasticsearch.common.lucene.search.function.FiltersFunctionScoreQuery
 import org.elasticsearch.common.lucene.search.function.ScoreFunction;
 import org.elasticsearch.common.xcontent.XContentParser;
 import org.elasticsearch.script.SearchScript;
-import org.elasticsearch.util.ESCollections;
-import org.elasticsearch.util.ESCollections.FloatList;
 
 import com.carrotsearch.hppc.FloatArrayList;
-
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Map;
 
 /**
  *

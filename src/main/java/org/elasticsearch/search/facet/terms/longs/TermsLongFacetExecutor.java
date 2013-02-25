@@ -19,6 +19,7 @@
 
 package org.elasticsearch.search.facet.terms.longs;
 
+import com.carrotsearch.hppc.LongIntOpenHashMap;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import gnu.trove.iterator.TLongIntIterator;
@@ -54,7 +55,7 @@ public class TermsLongFacetExecutor extends FacetExecutor {
     private final SearchScript script;
     private final ImmutableSet<BytesRef> excluded;
 
-    final TLongIntHashMap facets;
+    final LongIntOpenHashMap facets;
     long missing;
     long total;
 
@@ -163,7 +164,7 @@ public class TermsLongFacetExecutor extends FacetExecutor {
 
         private final TLongHashSet excluded;
 
-        public AggregatorValueProc(TLongIntHashMap facets, Set<BytesRef> excluded, SearchScript script) {
+        public AggregatorValueProc(LongIntOpenHashMap facets, Set<BytesRef> excluded, SearchScript script) {
             super(facets);
             this.script = script;
             if (excluded == null || excluded.isEmpty()) {
@@ -202,18 +203,18 @@ public class TermsLongFacetExecutor extends FacetExecutor {
 
     public static class StaticAggregatorValueProc implements LongValues.ValueInDocProc {
 
-        private final TLongIntHashMap facets;
+        private final LongIntOpenHashMap facets;
 
         private int missing;
         private int total;
 
-        public StaticAggregatorValueProc(TLongIntHashMap facets) {
+        public StaticAggregatorValueProc(LongIntOpenHashMap facets) {
             this.facets = facets;
         }
 
         @Override
         public void onValue(int docId, long value) {
-            facets.adjustOrPutValue(value, 1, 1);
+            facets.putOrAdd(value, 1, 1);
             total++;
         }
 
@@ -222,7 +223,7 @@ public class TermsLongFacetExecutor extends FacetExecutor {
             missing++;
         }
 
-        public final TLongIntHashMap facets() {
+        public final LongIntOpenHashMap facets() {
             return facets;
         }
 

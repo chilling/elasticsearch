@@ -19,6 +19,8 @@
 
 package org.elasticsearch.search.dfs;
 
+import java.io.IOException;
+
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.CollectionStatistics;
 import org.apache.lucene.search.TermStatistics;
@@ -28,12 +30,8 @@ import org.elasticsearch.common.io.stream.StreamOutput;
 import org.elasticsearch.search.SearchPhaseResult;
 import org.elasticsearch.search.SearchShardTarget;
 import org.elasticsearch.transport.TransportResponse;
-import org.elasticsearch.util.ESCollections;
 
 import com.carrotsearch.hppc.ObjectObjectOpenHashMap;
-
-import java.io.IOException;
-import java.util.Map;
 
 /**
  *

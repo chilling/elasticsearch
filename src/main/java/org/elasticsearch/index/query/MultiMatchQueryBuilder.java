@@ -19,17 +19,15 @@
 
 package org.elasticsearch.index.query;
 
-import com.carrotsearch.hppc.ObjectFloatOpenHashMap;
-import com.google.common.collect.Lists;
-import org.elasticsearch.common.xcontent.XContentBuilder;
-import org.elasticsearch.util.ESCollections;
-import org.elasticsearch.util.ESCollections.Constants;
-import org.elasticsearch.util.ESCollections.ObjectFloatMap;
-
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
+
+import org.elasticsearch.common.xcontent.XContentBuilder;
+
+import com.carrotsearch.hppc.ObjectFloatOpenHashMap;
+import com.google.common.collect.Lists;
 
 /**
  * Same as {@link MatchQueryBuilder} but supports multiple fields.
@@ -94,7 +92,7 @@ public class MultiMatchQueryBuilder extends BaseQueryBuilder implements Boostabl
     public MultiMatchQueryBuilder field(String field, float boost) {
         fields.add(field);
         if (fieldsBoosts == null) {
-            fieldsBoosts = new ObjectFloatOpenHashMap(Constants.DEFAULT_CAPACITY, Constants.DEFAULT_LOAD_FACTOR);
+            fieldsBoosts = new ObjectFloatOpenHashMap<String>();
         }
         fieldsBoosts.put(field, boost);
         return this;

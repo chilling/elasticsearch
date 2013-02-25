@@ -19,6 +19,7 @@
 
 package org.elasticsearch.search.facet.terms.strings;
 
+import com.carrotsearch.hppc.ObjectIntOpenHashMap;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import gnu.trove.iterator.TObjectIntIterator;
@@ -52,7 +53,7 @@ public class ScriptTermsStringFieldFacetExecutor extends FacetExecutor {
     private final ImmutableSet<BytesRef> excluded;
     private final int numberOfShards;
 
-    final TObjectIntHashMap<BytesRef> facets;
+    final ObjectIntOpenHashMap<BytesRef> facets;
     long missing;
     long total;
 
@@ -109,12 +110,12 @@ public class ScriptTermsStringFieldFacetExecutor extends FacetExecutor {
         private final Matcher matcher;
         private final ImmutableSet<BytesRef> excluded;
         private final SearchScript script;
-        private final TObjectIntHashMap<BytesRef> facets;
+        private final ObjectIntOpenHashMap<BytesRef> facets;
 
         long missing;
         long total;
 
-        Collector(Matcher matcher, ImmutableSet<BytesRef> excluded, SearchScript script, TObjectIntHashMap<BytesRef> facets) {
+        Collector(Matcher matcher, ImmutableSet<BytesRef> excluded, SearchScript script, ObjectIntOpenHashMap<BytesRef> facets) {
             this.matcher = matcher;
             this.excluded = excluded;
             this.script = script;
@@ -146,7 +147,7 @@ public class ScriptTermsStringFieldFacetExecutor extends FacetExecutor {
                     if (match(value)) {
                         found = true;
                         // LUCENE 4 UPGRADE: should be possible to convert directly to BR
-                        facets.adjustOrPutValue(new BytesRef(value), 1, 1);
+                        facets.putOrAdd(new BytesRef(value), 1, 1);
                         total++;
                     }
                 }
@@ -160,7 +161,7 @@ public class ScriptTermsStringFieldFacetExecutor extends FacetExecutor {
                     if (match(value)) {
                         found = true;
                         // LUCENE 4 UPGRADE: should be possible to convert directly to BR
-                        facets.adjustOrPutValue(new BytesRef(value), 1, 1);
+                        facets.putOrAdd(new BytesRef(value), 1, 1);
                         total++;
                     }
                 }
@@ -171,7 +172,7 @@ public class ScriptTermsStringFieldFacetExecutor extends FacetExecutor {
                 String value = o.toString();
                 if (match(value)) {
                     // LUCENE 4 UPGRADE: should be possible to convert directly to BR
-                    facets.adjustOrPutValue(new BytesRef(value), 1, 1);
+                    facets.putOrAdd(new BytesRef(value), 1, 1);
                     total++;
                 } else {
                     missing++;

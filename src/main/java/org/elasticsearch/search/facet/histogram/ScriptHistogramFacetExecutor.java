@@ -19,17 +19,18 @@
 
 package org.elasticsearch.search.facet.histogram;
 
+import java.io.IOException;
+import java.util.Map;
+
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.search.Scorer;
 import org.elasticsearch.common.CacheRecycler;
-import org.elasticsearch.common.trove.ExtTLongObjectHashMap;
 import org.elasticsearch.script.SearchScript;
 import org.elasticsearch.search.facet.FacetExecutor;
 import org.elasticsearch.search.facet.InternalFacet;
 import org.elasticsearch.search.internal.SearchContext;
 
-import java.io.IOException;
-import java.util.Map;
+import com.carrotsearch.hppc.LongObjectOpenHashMap;
 
 /**
  *
@@ -41,7 +42,7 @@ public class ScriptHistogramFacetExecutor extends FacetExecutor {
     final long interval;
     private final HistogramFacet.ComparatorType comparatorType;
 
-    final ExtTLongObjectHashMap<InternalFullHistogramFacet.FullEntry> entries;
+    final LongObjectOpenHashMap<InternalFullHistogramFacet.FullEntry> entries;
 
     public ScriptHistogramFacetExecutor(String scriptLang, String keyScript, String valueScript, Map<String, Object> params, long interval, HistogramFacet.ComparatorType comparatorType, SearchContext context) {
         this.keyScript = context.scriptService().search(context.lookup(), scriptLang, keyScript, params);
@@ -68,9 +69,9 @@ public class ScriptHistogramFacetExecutor extends FacetExecutor {
 
     class Collector extends FacetExecutor.Collector {
 
-        final ExtTLongObjectHashMap<InternalFullHistogramFacet.FullEntry> entries;
+        final LongObjectOpenHashMap<InternalFullHistogramFacet.FullEntry> entries;
 
-        Collector(ExtTLongObjectHashMap<InternalFullHistogramFacet.FullEntry> entries) {
+        Collector(LongObjectOpenHashMap<InternalFullHistogramFacet.FullEntry> entries) {
             this.entries = entries;
         }
 

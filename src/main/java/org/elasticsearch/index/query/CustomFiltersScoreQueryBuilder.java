@@ -19,15 +19,14 @@
 
 package org.elasticsearch.index.query;
 
-import com.carrotsearch.hppc.FloatArrayList;
-import com.google.common.collect.Maps;
-import org.elasticsearch.common.xcontent.XContentBuilder;
-import org.elasticsearch.util.ESCollections;
-import org.elasticsearch.util.ESCollections.FloatList;
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Map;
+
+import org.elasticsearch.common.xcontent.XContentBuilder;
+
+import com.carrotsearch.hppc.FloatArrayList;
+import com.google.common.collect.Maps;
 
 /**
  * A query that uses a filters with a script associated with them to compute the score.

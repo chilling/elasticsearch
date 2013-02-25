@@ -19,8 +19,9 @@
 
 package org.elasticsearch.cluster.routing.allocation.decider;
 
-import com.carrotsearch.hppc.ObjectIntOpenHashMap;
-import com.google.common.collect.Maps;
+import java.util.HashMap;
+import java.util.Map;
+
 import org.elasticsearch.cluster.metadata.IndexMetaData;
 import org.elasticsearch.cluster.metadata.MetaData;
 import org.elasticsearch.cluster.routing.MutableShardRouting;
@@ -31,11 +32,9 @@ import org.elasticsearch.common.inject.Inject;
 import org.elasticsearch.common.settings.ImmutableSettings;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.node.settings.NodeSettingsService;
-import org.elasticsearch.util.ESCollections;
-import org.elasticsearch.util.ESCollections.ObjectIntMap;
 
-import java.util.HashMap;
-import java.util.Map;
+import com.carrotsearch.hppc.ObjectIntOpenHashMap;
+import com.google.common.collect.Maps;
 
 /**
  * This {@link AllocationDecider} controls shard allocation based on

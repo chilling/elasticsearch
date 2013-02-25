@@ -25,7 +25,6 @@ import java.io.IOException;
 import java.util.List;
 
 import org.elasticsearch.common.xcontent.XContentBuilder;
-import org.elasticsearch.util.ESCollections.Constants;
 
 import com.carrotsearch.hppc.ObjectFloatOpenHashMap;
 
@@ -123,7 +122,7 @@ public class QueryStringQueryBuilder extends BaseQueryBuilder implements Boostab
         }
         fields.add(field);
         if (fieldsBoosts == null) {
-            fieldsBoosts = new ObjectFloatOpenHashMap<String>(Constants.DEFAULT_CAPACITY, Constants.DEFAULT_LOAD_FACTOR);
+            fieldsBoosts = new ObjectFloatOpenHashMap<String>();
         }
         fieldsBoosts.put(field, boost);
         return this;

@@ -22,30 +22,24 @@ package org.elasticsearch.common;
 import java.lang.ref.SoftReference;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
 
 import org.elasticsearch.common.util.concurrent.ConcurrentCollections;
-import org.elasticsearch.util.collections.hppc.BaseSetImpl;
 
 import com.carrotsearch.hppc.ByteIntMap;
 import com.carrotsearch.hppc.ByteIntOpenHashMap;
-import com.carrotsearch.hppc.DoubleIntMap;
 import com.carrotsearch.hppc.DoubleIntOpenHashMap;
-import com.carrotsearch.hppc.DoubleObjectMap;
 import com.carrotsearch.hppc.DoubleObjectOpenHashMap;
 import com.carrotsearch.hppc.FloatIntMap;
 import com.carrotsearch.hppc.FloatIntOpenHashMap;
 import com.carrotsearch.hppc.IntIntMap;
 import com.carrotsearch.hppc.IntIntOpenHashMap;
-import com.carrotsearch.hppc.IntObjectMap;
 import com.carrotsearch.hppc.IntObjectOpenHashMap;
-import com.carrotsearch.hppc.LongIntMap;
 import com.carrotsearch.hppc.LongIntOpenHashMap;
-import com.carrotsearch.hppc.LongLongMap;
 import com.carrotsearch.hppc.LongLongOpenHashMap;
-import com.carrotsearch.hppc.LongObjectMap;
 import com.carrotsearch.hppc.LongObjectOpenHashMap;
 import com.carrotsearch.hppc.ObjectFloatOpenHashMap;
 import com.carrotsearch.hppc.ObjectIntOpenHashMap;
@@ -126,11 +120,11 @@ public class CacheRecycler {
     public static <T> Set<T> popHashSet() {
         Queue<Set<?>> ref = hashSet.get();
         if (ref == null) {
-            return new BaseSetImpl<T>();
+            return new HashSet<T>();
         }
         Set set = ref.poll();
         if (set == null) {
-            return new BaseSetImpl<T>();
+            return new HashSet<T>();
         }
         return set;
     }
@@ -147,23 +141,23 @@ public class CacheRecycler {
 
     // ------ ExtTDoubleObjectMap -----
 
-    private final static SoftWrapper<Queue<DoubleObjectMap<?>>> DoubleObjectMap = new SoftWrapper<Queue<DoubleObjectMap<?>>>();
+    private final static SoftWrapper<Queue<DoubleObjectOpenHashMap<?>>> DoubleObjectMap = new SoftWrapper<Queue<DoubleObjectOpenHashMap<?>>>();
 
     @SuppressWarnings("unchecked")
-    public static <T> DoubleObjectMap<T> popDoubleObjectMap() {
-        Queue<DoubleObjectMap<?>> ref = DoubleObjectMap.get();
+    public static <T> DoubleObjectOpenHashMap<T> popDoubleObjectMap() {
+        Queue<DoubleObjectOpenHashMap<?>> ref = DoubleObjectMap.get();
         if (ref == null) {
             return new DoubleObjectOpenHashMap<T>();
         }
-        DoubleObjectMap map = ref.poll();
+        DoubleObjectOpenHashMap map = ref.poll();
         if (map == null) {
             return new DoubleObjectOpenHashMap<T>();
         }
         return map;
     }
 
-    public static void pushDoubleObjectMap(DoubleObjectMap<?> map) {
-        Queue<DoubleObjectMap<?>> ref = DoubleObjectMap.get();
+    public static void pushDoubleObjectMap(DoubleObjectOpenHashMap<?> map) {
+        Queue<DoubleObjectOpenHashMap<?>> ref = DoubleObjectMap.get();
         if (ref == null) {
             ref = ConcurrentCollections.newQueue();
             DoubleObjectMap.set(ref);
@@ -174,23 +168,23 @@ public class CacheRecycler {
 
     // ----- ExtTLongObjectMap ----
 
-    private final static SoftWrapper<Queue<LongObjectMap<?>>> LongObjectMap = new SoftWrapper<Queue<LongObjectMap<?>>>();
+    private final static SoftWrapper<Queue<LongObjectOpenHashMap<?>>> LongObjectMap = new SoftWrapper<Queue<LongObjectOpenHashMap<?>>>();
 
     @SuppressWarnings("unchecked")
-    public static <T> LongObjectMap<T> popLongObjectMap() {
-        Queue<LongObjectMap<?>> ref = LongObjectMap.get();
+    public static <T> LongObjectOpenHashMap<T> popLongObjectMap() {
+        Queue<LongObjectOpenHashMap<?>> ref = LongObjectMap.get();
         if (ref == null) {
             return new LongObjectOpenHashMap<T>();
         }
-        LongObjectMap map = ref.poll();
+        LongObjectOpenHashMap map = ref.poll();
         if (map == null) {
             return new LongObjectOpenHashMap<T>();
         }
         return map;
     }
 
-    public static void pushLongObjectMap(LongObjectMap<?> map) {
-        Queue<LongObjectMap<?>> ref = LongObjectMap.get();
+    public static void pushLongObjectMap(LongObjectOpenHashMap<?> map) {
+        Queue<LongObjectOpenHashMap<?>> ref = LongObjectMap.get();
         if (ref == null) {
             ref = ConcurrentCollections.newQueue();
             LongObjectMap.set(ref);
@@ -201,22 +195,22 @@ public class CacheRecycler {
 
     // ----- TLongLongMap ----
 
-    private final static SoftWrapper<Queue<LongLongMap>> LongLongMap = new SoftWrapper<Queue<LongLongMap>>();
+    private final static SoftWrapper<Queue<LongLongOpenHashMap>> LongLongMap = new SoftWrapper<Queue<LongLongOpenHashMap>>();
 
-    public static LongLongMap popLongLongMap() {
-        Queue<LongLongMap> ref = LongLongMap.get();
+    public static LongLongOpenHashMap popLongLongMap() {
+        Queue<LongLongOpenHashMap> ref = LongLongMap.get();
         if (ref == null) {
             return new LongLongOpenHashMap();
         }
-        LongLongMap map = ref.poll();
+        LongLongOpenHashMap map = ref.poll();
         if (map == null) {
             return new LongLongOpenHashMap();
         }
         return map;
     }
 
-    public static void pushLongLongMap(LongLongMap map) {
-        Queue<LongLongMap> ref = LongLongMap.get();
+    public static void pushLongLongMap(LongLongOpenHashMap map) {
+        Queue<LongLongOpenHashMap> ref = LongLongMap.get();
         if (ref == null) {
             ref = ConcurrentCollections.newQueue();
             LongLongMap.set(ref);
@@ -283,23 +277,23 @@ public class CacheRecycler {
 
     // ----- TDoubleIntMap ---
 
-    private final static SoftWrapper<Queue<DoubleIntMap>> DoubleIntMap = new SoftWrapper<Queue<DoubleIntMap>>();
+    private final static SoftWrapper<Queue<DoubleIntOpenHashMap>> DoubleIntMap = new SoftWrapper<Queue<DoubleIntOpenHashMap>>();
 
 
-    public static DoubleIntMap popDoubleIntMap() {
-        Queue<DoubleIntMap> ref = DoubleIntMap.get();
+    public static DoubleIntOpenHashMap popDoubleIntMap() {
+        Queue<DoubleIntOpenHashMap> ref = DoubleIntMap.get();
         if (ref == null) {
             return new DoubleIntOpenHashMap();
         }
-        DoubleIntMap map = ref.poll();
+        DoubleIntOpenHashMap map = ref.poll();
         if (map == null) {
             return new DoubleIntOpenHashMap();
         }
         return map;
     }
 
-    public static void pushDoubleIntMap(DoubleIntMap map) {
-        Queue<DoubleIntMap> ref = DoubleIntMap.get();
+    public static void pushDoubleIntMap(DoubleIntOpenHashMap map) {
+        Queue<DoubleIntOpenHashMap> ref = DoubleIntMap.get();
         if (ref == null) {
             ref = ConcurrentCollections.newQueue();
             DoubleIntMap.set(ref);
@@ -366,23 +360,23 @@ public class CacheRecycler {
 
     // ----- TLongIntMap ----
 
-    private final static SoftWrapper<Queue<LongIntMap>> LongIntMap = new SoftWrapper<Queue<LongIntMap>>();
+    private final static SoftWrapper<Queue<LongIntOpenHashMap>> LongIntMap = new SoftWrapper<Queue<LongIntOpenHashMap>>();
 
 
-    public static LongIntMap popLongIntMap() {
-        Queue<LongIntMap> ref = LongIntMap.get();
+    public static LongIntOpenHashMap popLongIntMap() {
+        Queue<LongIntOpenHashMap> ref = LongIntMap.get();
         if (ref == null) {
             return new LongIntOpenHashMap();
         }
-        LongIntMap map = ref.poll();
+        LongIntOpenHashMap map = ref.poll();
         if (map == null) {
             return new LongIntOpenHashMap();
         }
         return map;
     }
 
-    public static void pushLongIntMap(LongIntMap map) {
-        Queue<LongIntMap> ref = LongIntMap.get();
+    public static void pushLongIntMap(LongIntOpenHashMap map) {
+        Queue<LongIntOpenHashMap> ref = LongIntMap.get();
         if (ref == null) {
             ref = ConcurrentCollections.newQueue();
             LongIntMap.set(ref);

@@ -19,6 +19,7 @@
 
 package org.elasticsearch.search.facet.terms.strings;
 
+import com.carrotsearch.hppc.ObjectIntOpenHashMap;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import gnu.trove.iterator.TObjectIntIterator;
@@ -57,7 +58,7 @@ public class FieldsTermsStringFacetExecutor extends FacetExecutor {
     private final Pattern pattern;
     private final ImmutableSet<BytesRef> excluded;
 
-    TObjectIntHashMap<HashedBytesRef> facets;
+    ObjectIntOpenHashMap<HashedBytesRef> facets;
     long missing;
     long total;
 
@@ -196,7 +197,7 @@ public class FieldsTermsStringFacetExecutor extends FacetExecutor {
 
         private final SearchScript script;
 
-        public AggregatorValueProc(TObjectIntHashMap<HashedBytesRef> facets, ImmutableSet<BytesRef> excluded, Pattern pattern, SearchScript script) {
+        public AggregatorValueProc(ObjectIntOpenHashMap<HashedBytesRef> facets, ImmutableSet<BytesRef> excluded, Pattern pattern, SearchScript script) {
             super(facets);
             this.excluded = excluded;
             this.matcher = pattern != null ? pattern.matcher("") : null;
@@ -237,19 +238,19 @@ public class FieldsTermsStringFacetExecutor extends FacetExecutor {
     public static class StaticAggregatorValueProc implements HashedBytesValues.ValueInDocProc {
 
         // LUCENE 4 UPGRADE: check if hashcode is not too expensive
-        private final TObjectIntHashMap<HashedBytesRef> facets;
+        private final ObjectIntOpenHashMap<HashedBytesRef> facets;
         HashedBytesValues values;
 
         private int missing;
         private int total;
 
-        public StaticAggregatorValueProc(TObjectIntHashMap<HashedBytesRef> facets) {
+        public StaticAggregatorValueProc(ObjectIntOpenHashMap<HashedBytesRef> facets) {
             this.facets = facets;
         }
 
         @Override
         public void onValue(int docId, HashedBytesRef value) {
-            facets.adjustOrPutValue(values.makeSafe(value), 1, 1);
+            facets.putOrAdd(values.makeSafe(value), 1, 1);
             total++;
         }
 
@@ -258,7 +259,7 @@ public class FieldsTermsStringFacetExecutor extends FacetExecutor {
             missing++;
         }
 
-        public final TObjectIntHashMap<HashedBytesRef> facets() {
+        public final ObjectIntOpenHashMap<HashedBytesRef> facets() {
             return facets;
         }
 

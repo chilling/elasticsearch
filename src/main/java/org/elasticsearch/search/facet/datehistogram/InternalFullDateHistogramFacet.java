@@ -27,6 +27,8 @@ import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.common.xcontent.XContentBuilderString;
 import org.elasticsearch.search.facet.Facet;
 
+import com.carrotsearch.hppc.LongObjectOpenHashMap;
+
 import java.io.IOException;
 import java.util.*;
 
@@ -114,7 +116,7 @@ public class InternalFullDateHistogramFacet extends InternalDateHistogramFacet {
     }
 
     private ComparatorType comparatorType;
-    ExtTLongObjectHashMap<FullEntry> tEntries;
+    LongObjectOpenHashMap<FullEntry> tEntries;
     boolean cachedEntries;
     Collection<FullEntry> entries;
 
@@ -125,12 +127,12 @@ public class InternalFullDateHistogramFacet extends InternalDateHistogramFacet {
         super(name);
     }
 
-    public InternalFullDateHistogramFacet(String name, ComparatorType comparatorType, ExtTLongObjectHashMap<InternalFullDateHistogramFacet.FullEntry> entries, boolean cachedEntries) {
+    public InternalFullDateHistogramFacet(String name, ComparatorType comparatorType, LongObjectOpenHashMap<InternalFullDateHistogramFacet.FullEntry> entries, boolean cachedEntries) {
         super(name);
         this.comparatorType = comparatorType;
         this.tEntries = entries;
         this.cachedEntries = cachedEntries;
-        this.entries = entries.valueCollection();
+        this.entries = Arrays.asList(entries.values().toArray(InternalFullDateHistogramFacet.FullEntry.class));
     }
 
     @Override
@@ -165,7 +167,7 @@ public class InternalFullDateHistogramFacet extends InternalDateHistogramFacet {
             return internalFacet;
         }
 
-        ExtTLongObjectHashMap<FullEntry> map = CacheRecycler.popLongObjectMap();
+        LongObjectOpenHashMap<FullEntry> map = CacheRecycler.popLongObjectMap();
 
         for (Facet facet : facets) {
             InternalFullDateHistogramFacet histoFacet = (InternalFullDateHistogramFacet) facet;
@@ -189,7 +191,7 @@ public class InternalFullDateHistogramFacet extends InternalDateHistogramFacet {
         }
 
         // sort
-        Object[] values = map.internalValues();
+        Object[] values = map.values().toArray();
         Arrays.sort(values, (Comparator) comparatorType.comparator());
         List<FullEntry> ordered = new ArrayList<FullEntry>(map.size());
         for (int i = 0; i < map.size(); i++) {

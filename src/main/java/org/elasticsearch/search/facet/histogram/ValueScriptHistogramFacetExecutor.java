@@ -30,6 +30,8 @@ import org.elasticsearch.search.facet.FacetExecutor;
 import org.elasticsearch.search.facet.InternalFacet;
 import org.elasticsearch.search.internal.SearchContext;
 
+import com.carrotsearch.hppc.LongObjectOpenHashMap;
+
 import java.io.IOException;
 import java.util.Map;
 
@@ -44,7 +46,7 @@ public class ValueScriptHistogramFacetExecutor extends FacetExecutor {
     final SearchScript valueScript;
     final long interval;
 
-    final ExtTLongObjectHashMap<InternalFullHistogramFacet.FullEntry> entries;
+    final LongObjectOpenHashMap<InternalFullHistogramFacet.FullEntry> entries;
 
     public ValueScriptHistogramFacetExecutor(IndexNumericFieldData indexFieldData, String scriptLang, String valueScript, Map<String, Object> params, long interval, HistogramFacet.ComparatorType comparatorType, SearchContext context) {
         this.comparatorType = comparatorType;
@@ -105,9 +107,9 @@ public class ValueScriptHistogramFacetExecutor extends FacetExecutor {
 
         private final SearchScript valueScript;
 
-        final ExtTLongObjectHashMap<InternalFullHistogramFacet.FullEntry> entries;
+        final LongObjectOpenHashMap<InternalFullHistogramFacet.FullEntry> entries;
 
-        public HistogramProc(long interval, SearchScript valueScript, ExtTLongObjectHashMap<InternalFullHistogramFacet.FullEntry> entries) {
+        public HistogramProc(long interval, SearchScript valueScript, LongObjectOpenHashMap<InternalFullHistogramFacet.FullEntry> entries) {
             this.interval = interval;
             this.valueScript = valueScript;
             this.entries = entries;

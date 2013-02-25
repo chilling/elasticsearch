@@ -19,9 +19,10 @@
 
 package org.elasticsearch.search.dfs;
 
-import com.carrotsearch.hppc.ObjectObjectOpenHashMap;
-import com.carrotsearch.hppc.ObjectOpenHashSet;
-import com.google.common.collect.ImmutableMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
+
 import org.apache.lucene.index.IndexReaderContext;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermContext;
@@ -31,11 +32,9 @@ import org.elasticsearch.common.util.concurrent.ThreadLocals;
 import org.elasticsearch.search.SearchParseElement;
 import org.elasticsearch.search.SearchPhase;
 import org.elasticsearch.search.internal.SearchContext;
-import org.elasticsearch.util.ESCollections;
 
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
+import com.carrotsearch.hppc.ObjectObjectOpenHashMap;
+import com.google.common.collect.ImmutableMap;
 
 /**
  *

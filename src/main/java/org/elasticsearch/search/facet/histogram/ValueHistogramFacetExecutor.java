@@ -19,16 +19,17 @@
 
 package org.elasticsearch.search.facet.histogram;
 
+import java.io.IOException;
+
 import org.apache.lucene.index.AtomicReaderContext;
 import org.elasticsearch.common.CacheRecycler;
-import org.elasticsearch.common.trove.ExtTLongObjectHashMap;
 import org.elasticsearch.index.fielddata.DoubleValues;
 import org.elasticsearch.index.fielddata.IndexNumericFieldData;
 import org.elasticsearch.search.facet.FacetExecutor;
 import org.elasticsearch.search.facet.InternalFacet;
 import org.elasticsearch.search.internal.SearchContext;
 
-import java.io.IOException;
+import com.carrotsearch.hppc.LongObjectOpenHashMap;
 
 /**
  * A histogram facet collector that uses different fields for the key and the value.
@@ -40,7 +41,7 @@ public class ValueHistogramFacetExecutor extends FacetExecutor {
     private final HistogramFacet.ComparatorType comparatorType;
     private final long interval;
 
-    final ExtTLongObjectHashMap<InternalFullHistogramFacet.FullEntry> entries;
+    final LongObjectOpenHashMap<InternalFullHistogramFacet.FullEntry> entries;
 
     public ValueHistogramFacetExecutor(IndexNumericFieldData keyIndexFieldData, IndexNumericFieldData valueIndexFieldData, long interval, HistogramFacet.ComparatorType comparatorType, SearchContext context) {
         this.comparatorType = comparatorType;
@@ -88,13 +89,13 @@ public class ValueHistogramFacetExecutor extends FacetExecutor {
     public static class HistogramProc implements DoubleValues.ValueInDocProc {
 
         final long interval;
-        final ExtTLongObjectHashMap<InternalFullHistogramFacet.FullEntry> entries;
+        final LongObjectOpenHashMap<InternalFullHistogramFacet.FullEntry> entries;
 
         DoubleValues valueValues;
 
         final ValueAggregator valueAggregator = new ValueAggregator();
 
-        public HistogramProc(long interval, ExtTLongObjectHashMap<InternalFullHistogramFacet.FullEntry> entries) {
+        public HistogramProc(long interval, LongObjectOpenHashMap<InternalFullHistogramFacet.FullEntry> entries) {
             this.interval = interval;
             this.entries = entries;
         }

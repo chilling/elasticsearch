@@ -19,16 +19,26 @@
 
 package org.elasticsearch.common.lucene.search;
 
-import org.apache.lucene.index.*;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.ListIterator;
+import java.util.Set;
+
+import org.apache.lucene.index.AtomicReaderContext;
+import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.Term;
+import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.MultiPhraseQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.StringHelper;
 import org.apache.lucene.util.ToStringUtils;
-import org.elasticsearch.util.ESCollections;
-
-import java.io.IOException;
-import java.util.*;
 
 public class MultiPhrasePrefixQuery extends Query {
 

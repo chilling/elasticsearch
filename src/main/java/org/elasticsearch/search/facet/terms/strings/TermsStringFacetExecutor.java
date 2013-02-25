@@ -19,6 +19,8 @@
 
 package org.elasticsearch.search.facet.terms.strings;
 
+import com.carrotsearch.hppc.LongObjectOpenHashMap;
+import com.carrotsearch.hppc.ObjectIntOpenHashMap;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import gnu.trove.iterator.TObjectIntIterator;
@@ -58,7 +60,7 @@ public class TermsStringFacetExecutor extends FacetExecutor {
     private final int numberOfShards;
 
     // the aggregation map
-    TObjectIntHashMap<HashedBytesRef> facets;
+    ObjectIntOpenHashMap<HashedBytesRef> facets;
     long missing;
     long total;
 
@@ -169,7 +171,7 @@ public class TermsStringFacetExecutor extends FacetExecutor {
         private final Matcher matcher;
         private final SearchScript script;
 
-        public AggregatorValueProc(TObjectIntHashMap<HashedBytesRef> facets, ImmutableSet<BytesRef> excluded, Pattern pattern, SearchScript script) {
+        public AggregatorValueProc(ObjectIntOpenHashMap<HashedBytesRef> facets, ImmutableSet<BytesRef> excluded, Pattern pattern, SearchScript script) {
             super(facets);
             this.excluded = excluded;
             this.matcher = pattern != null ? pattern.matcher("") : null;
@@ -209,20 +211,20 @@ public class TermsStringFacetExecutor extends FacetExecutor {
     public static class StaticAggregatorValueProc implements HashedBytesValues.ValueInDocProc {
 
         // LUCENE 4 UPGRADE: check if hashcode is not too expensive
-        private final TObjectIntHashMap<HashedBytesRef> facets;
+        private final ObjectIntOpenHashMap<HashedBytesRef> facets;
 
         HashedBytesValues values;
         private int missing = 0;
         private int total = 0;
 
-        public StaticAggregatorValueProc(TObjectIntHashMap<HashedBytesRef> facets) {
+        public StaticAggregatorValueProc(ObjectIntOpenHashMap<HashedBytesRef> facets) {
             this.facets = facets;
         }
 
         @Override
         public void onValue(int docId, HashedBytesRef value) {
             // we have to "makeSafe", even if it exists, since it might not..., need to find a way to optimize it
-            facets.adjustOrPutValue(values.makeSafe(value), 1, 1);
+            facets.putOrAdd(values.makeSafe(value), 1, 1);
             total++;
         }
 
@@ -231,7 +233,7 @@ public class TermsStringFacetExecutor extends FacetExecutor {
             missing++;
         }
 
-        public final TObjectIntHashMap<HashedBytesRef> facets() {
+        public final ObjectIntOpenHashMap<HashedBytesRef> facets() {
             return facets;
         }
 

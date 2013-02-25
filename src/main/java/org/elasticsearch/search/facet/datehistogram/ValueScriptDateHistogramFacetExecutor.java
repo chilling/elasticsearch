@@ -19,18 +19,19 @@
 
 package org.elasticsearch.search.facet.datehistogram;
 
+import java.io.IOException;
+
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.search.Scorer;
 import org.elasticsearch.common.CacheRecycler;
 import org.elasticsearch.common.joda.TimeZoneRounding;
-import org.elasticsearch.common.trove.ExtTLongObjectHashMap;
 import org.elasticsearch.index.fielddata.IndexNumericFieldData;
 import org.elasticsearch.index.fielddata.LongValues;
 import org.elasticsearch.script.SearchScript;
 import org.elasticsearch.search.facet.FacetExecutor;
 import org.elasticsearch.search.facet.InternalFacet;
 
-import java.io.IOException;
+import com.carrotsearch.hppc.LongObjectOpenHashMap;
 
 /**
  * A histogram facet collector that uses the same field as the key as well as the
@@ -43,7 +44,7 @@ public class ValueScriptDateHistogramFacetExecutor extends FacetExecutor {
     final SearchScript valueScript;
     final TimeZoneRounding tzRounding;
 
-    final ExtTLongObjectHashMap<InternalFullDateHistogramFacet.FullEntry> entries;
+    final LongObjectOpenHashMap<InternalFullDateHistogramFacet.FullEntry> entries;
 
     public ValueScriptDateHistogramFacetExecutor(IndexNumericFieldData keyIndexFieldData, SearchScript valueScript, TimeZoneRounding tzRounding, DateHistogramFacet.ComparatorType comparatorType) {
         this.comparatorType = comparatorType;
@@ -99,9 +100,9 @@ public class ValueScriptDateHistogramFacetExecutor extends FacetExecutor {
         private final TimeZoneRounding tzRounding;
         protected final SearchScript valueScript;
 
-        final ExtTLongObjectHashMap<InternalFullDateHistogramFacet.FullEntry> entries;
+        final LongObjectOpenHashMap<InternalFullDateHistogramFacet.FullEntry> entries;
 
-        public DateHistogramProc(TimeZoneRounding tzRounding, SearchScript valueScript, final ExtTLongObjectHashMap<InternalFullDateHistogramFacet.FullEntry> entries) {
+        public DateHistogramProc(TimeZoneRounding tzRounding, SearchScript valueScript, final LongObjectOpenHashMap<InternalFullDateHistogramFacet.FullEntry> entries) {
             this.tzRounding = tzRounding;
             this.valueScript = valueScript;
             this.entries = entries;

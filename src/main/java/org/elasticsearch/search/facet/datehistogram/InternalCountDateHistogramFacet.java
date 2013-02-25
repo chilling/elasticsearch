@@ -20,7 +20,12 @@
 package org.elasticsearch.search.facet.datehistogram;
 
 import gnu.trove.iterator.TLongLongIterator;
-import gnu.trove.map.hash.TLongLongHashMap;
+
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.Iterator;
+import java.util.List;
+
 import org.elasticsearch.common.CacheRecycler;
 import org.elasticsearch.common.io.stream.StreamInput;
 import org.elasticsearch.common.io.stream.StreamOutput;
@@ -28,10 +33,7 @@ import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.common.xcontent.XContentBuilderString;
 import org.elasticsearch.search.facet.Facet;
 
-import java.io.IOException;
-import java.util.Arrays;
-import java.util.Iterator;
-import java.util.List;
+import com.carrotsearch.hppc.LongLongOpenHashMap;
 
 /**
  *
@@ -106,14 +108,14 @@ public class InternalCountDateHistogramFacet extends InternalDateHistogramFacet 
     }
 
     private ComparatorType comparatorType;
-    TLongLongHashMap counts;
+    LongLongOpenHashMap counts;
     boolean cachedCounts;
     CountEntry[] entries = null;
 
     private InternalCountDateHistogramFacet() {
     }
 
-    public InternalCountDateHistogramFacet(String name, ComparatorType comparatorType, TLongLongHashMap counts, boolean cachedCounts) {
+    public InternalCountDateHistogramFacet(String name, ComparatorType comparatorType, LongLongOpenHashMap counts, boolean cachedCounts) {
         super(name);
         this.comparatorType = comparatorType;
         this.counts = counts;
@@ -158,13 +160,13 @@ public class InternalCountDateHistogramFacet extends InternalDateHistogramFacet 
         if (facets.size() == 1) {
             return facets.get(0);
         }
-        TLongLongHashMap counts = CacheRecycler.popLongLongMap();
+        LongLongOpenHashMap counts = CacheRecycler.popLongLongMap();
 
         for (Facet facet : facets) {
             InternalCountDateHistogramFacet histoFacet = (InternalCountDateHistogramFacet) facet;
             for (TLongLongIterator it = histoFacet.counts.iterator(); it.hasNext(); ) {
                 it.advance();
-                counts.adjustOrPutValue(it.key(), it.value(), it.value());
+                counts.putOrAdd(it.key(), it.value(), it.value());
             }
             histoFacet.releaseCache();
 

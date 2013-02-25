@@ -28,6 +28,8 @@ import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.common.xcontent.XContentBuilderString;
 import org.elasticsearch.search.facet.Facet;
 
+import com.carrotsearch.hppc.LongLongOpenHashMap;
+
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Iterator;
@@ -106,14 +108,14 @@ public class InternalCountHistogramFacet extends InternalHistogramFacet {
     }
 
     ComparatorType comparatorType;
-    TLongLongHashMap counts;
+    LongLongOpenHashMap counts;
     boolean cachedCounts;
     CountEntry[] entries = null;
 
     private InternalCountHistogramFacet() {
     }
 
-    public InternalCountHistogramFacet(String name, ComparatorType comparatorType, TLongLongHashMap counts, boolean cachedCounts) {
+    public InternalCountHistogramFacet(String name, ComparatorType comparatorType, LongLongOpenHashMap counts, boolean cachedCounts) {
         super(name);
         this.comparatorType = comparatorType;
         this.counts = counts;
@@ -158,13 +160,13 @@ public class InternalCountHistogramFacet extends InternalHistogramFacet {
         if (facets.size() == 1) {
             return facets.get(0);
         }
-        TLongLongHashMap counts = CacheRecycler.popLongLongMap();
+        LongLongOpenHashMap counts = CacheRecycler.popLongLongMap();
 
         for (Facet facet : facets) {
             InternalCountHistogramFacet histoFacet = (InternalCountHistogramFacet) facet;
             for (TLongLongIterator it = histoFacet.counts.iterator(); it.hasNext(); ) {
                 it.advance();
-                counts.adjustOrPutValue(it.key(), it.value(), it.value());
+                counts.putOrAdd(it.key(), it.value(), it.value());
             }
             histoFacet.releaseCache();
         }

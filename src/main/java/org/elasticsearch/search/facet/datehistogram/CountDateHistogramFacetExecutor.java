@@ -28,6 +28,9 @@ import org.elasticsearch.index.fielddata.LongValues;
 import org.elasticsearch.search.facet.FacetExecutor;
 import org.elasticsearch.search.facet.InternalFacet;
 
+import com.carrotsearch.hppc.LongLongMap;
+import com.carrotsearch.hppc.LongLongOpenHashMap;
+
 import java.io.IOException;
 
 /**
@@ -40,7 +43,7 @@ public class CountDateHistogramFacetExecutor extends FacetExecutor {
     private final IndexNumericFieldData indexFieldData;
     final DateHistogramFacet.ComparatorType comparatorType;
 
-    final TLongLongHashMap counts;
+    final LongLongOpenHashMap counts;
 
     public CountDateHistogramFacetExecutor(IndexNumericFieldData indexFieldData, TimeZoneRounding tzRounding, DateHistogramFacet.ComparatorType comparatorType) {
         this.comparatorType = comparatorType;
@@ -86,10 +89,10 @@ public class CountDateHistogramFacetExecutor extends FacetExecutor {
 
     public static class DateHistogramProc implements LongValues.ValueInDocProc {
 
-        private final TLongLongHashMap counts;
+        private final LongLongOpenHashMap counts;
         private final TimeZoneRounding tzRounding;
 
-        public DateHistogramProc(TLongLongHashMap counts, TimeZoneRounding tzRounding) {
+        public DateHistogramProc(LongLongOpenHashMap counts, TimeZoneRounding tzRounding) {
             this.counts = counts;
             this.tzRounding = tzRounding;
         }
@@ -100,10 +103,10 @@ public class CountDateHistogramFacetExecutor extends FacetExecutor {
 
         @Override
         public void onValue(int docId, long value) {
-            counts.adjustOrPutValue(tzRounding.calc(value), 1, 1);
+            counts.putOrAdd(tzRounding.calc(value), 1, 1);
         }
 
-        public TLongLongHashMap counts() {
+        public LongLongOpenHashMap counts() {
             return counts;
         }
     }

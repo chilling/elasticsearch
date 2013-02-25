@@ -29,6 +29,8 @@ import org.elasticsearch.index.fielddata.LongValues;
 import org.elasticsearch.search.facet.FacetExecutor;
 import org.elasticsearch.search.facet.InternalFacet;
 
+import com.carrotsearch.hppc.LongObjectOpenHashMap;
+
 import java.io.IOException;
 
 /**
@@ -41,7 +43,7 @@ public class ValueDateHistogramFacetExecutor extends FacetExecutor {
     private final DateHistogramFacet.ComparatorType comparatorType;
     final TimeZoneRounding tzRounding;
 
-    final ExtTLongObjectHashMap<InternalFullDateHistogramFacet.FullEntry> entries;
+    final LongObjectOpenHashMap<InternalFullDateHistogramFacet.FullEntry> entries;
 
     public ValueDateHistogramFacetExecutor(IndexNumericFieldData keyIndexFieldData, IndexNumericFieldData valueIndexFieldData, TimeZoneRounding tzRounding, DateHistogramFacet.ComparatorType comparatorType) {
         this.comparatorType = comparatorType;
@@ -89,14 +91,14 @@ public class ValueDateHistogramFacetExecutor extends FacetExecutor {
 
     public static class DateHistogramProc implements LongValues.ValueInDocProc {
 
-        final ExtTLongObjectHashMap<InternalFullDateHistogramFacet.FullEntry> entries;
+        final LongObjectOpenHashMap<InternalFullDateHistogramFacet.FullEntry> entries;
         private final TimeZoneRounding tzRounding;
 
         DoubleValues valueValues;
 
         final ValueAggregator valueAggregator = new ValueAggregator();
 
-        public DateHistogramProc(TimeZoneRounding tzRounding, ExtTLongObjectHashMap<InternalFullDateHistogramFacet.FullEntry> entries) {
+        public DateHistogramProc(TimeZoneRounding tzRounding, LongObjectOpenHashMap<InternalFullDateHistogramFacet.FullEntry> entries) {
             this.tzRounding = tzRounding;
             this.entries = entries;
         }

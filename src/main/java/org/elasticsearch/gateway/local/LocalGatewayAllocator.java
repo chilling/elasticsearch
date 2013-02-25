@@ -19,9 +19,11 @@
 
 package org.elasticsearch.gateway.local;
 
-import com.carrotsearch.hppc.ObjectLongOpenHashMap;
-import com.google.common.collect.Maps;
-import com.google.common.collect.Sets;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ConcurrentMap;
+
 import org.elasticsearch.ExceptionsHelper;
 import org.elasticsearch.cluster.metadata.IndexMetaData;
 import org.elasticsearch.cluster.node.DiscoveryNode;
@@ -46,14 +48,10 @@ import org.elasticsearch.index.shard.ShardId;
 import org.elasticsearch.index.store.StoreFileMetaData;
 import org.elasticsearch.indices.store.TransportNodesListShardStoreMetaData;
 import org.elasticsearch.transport.ConnectTransportException;
-import org.elasticsearch.util.ESCollections;
-import org.elasticsearch.util.ESCollections.ObjectLongIterator;
-import org.elasticsearch.util.ESCollections.ObjectLongMap;
 
-import java.util.Iterator;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.ConcurrentMap;
+import com.carrotsearch.hppc.ObjectLongOpenHashMap;
+import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
 
 /**
  *

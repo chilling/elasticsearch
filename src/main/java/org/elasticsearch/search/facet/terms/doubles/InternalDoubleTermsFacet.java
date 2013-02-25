@@ -19,6 +19,7 @@
 
 package org.elasticsearch.search.facet.terms.doubles;
 
+import com.carrotsearch.hppc.DoubleIntOpenHashMap;
 import com.google.common.collect.ImmutableList;
 import gnu.trove.iterator.TDoubleIntIterator;
 import gnu.trove.map.hash.TDoubleIntHashMap;
@@ -161,7 +162,7 @@ public class InternalDoubleTermsFacet extends InternalTermsFacet {
             return facets.get(0);
         }
         InternalDoubleTermsFacet first = (InternalDoubleTermsFacet) facets.get(0);
-        TDoubleIntHashMap aggregated = CacheRecycler.popDoubleIntMap();
+        DoubleIntOpenHashMap aggregated = CacheRecycler.popDoubleIntMap();
         long missing = 0;
         long total = 0;
         for (Facet facet : facets) {
@@ -169,7 +170,7 @@ public class InternalDoubleTermsFacet extends InternalTermsFacet {
             missing += mFacet.getMissingCount();
             total += mFacet.getTotalCount();
             for (DoubleEntry entry : mFacet.entries) {
-                aggregated.adjustOrPutValue(entry.term, entry.getCount(), entry.getCount());
+                aggregated.putOrAdd(entry.term, entry.getCount(), entry.getCount());
             }
         }
 

@@ -19,13 +19,16 @@
 
 package org.elasticsearch.search.facet.termsstats.strings;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Lists;
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Map;
+
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.search.Scorer;
 import org.elasticsearch.common.CacheRecycler;
 import org.elasticsearch.common.lucene.HashedBytesRef;
-import org.elasticsearch.common.trove.ExtTHashMap;
 import org.elasticsearch.index.fielddata.DoubleValues;
 import org.elasticsearch.index.fielddata.HashedBytesValues;
 import org.elasticsearch.index.fielddata.IndexFieldData;
@@ -36,10 +39,8 @@ import org.elasticsearch.search.facet.InternalFacet;
 import org.elasticsearch.search.facet.termsstats.TermsStatsFacet;
 import org.elasticsearch.search.internal.SearchContext;
 
-import java.io.IOException;
-import java.util.Arrays;
-import java.util.Comparator;
-import java.util.List;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
 
 public class TermsStatsStringFacetExecutor extends FacetExecutor {
 
@@ -51,7 +52,7 @@ public class TermsStatsStringFacetExecutor extends FacetExecutor {
     private final int size;
     private final int numberOfShards;
 
-    final ExtTHashMap<HashedBytesRef, InternalTermsStatsStringFacet.StringEntry> entries;
+    final Map<HashedBytesRef, InternalTermsStatsStringFacet.StringEntry> entries;
     long missing;
 
     public TermsStatsStringFacetExecutor(IndexFieldData keyIndexFieldData, IndexNumericFieldData valueIndexFieldData, SearchScript valueScript,
@@ -80,7 +81,7 @@ public class TermsStatsStringFacetExecutor extends FacetExecutor {
             // all terms, just return the collection, we will sort it on the way back
             return new InternalTermsStatsStringFacet(facetName, comparatorType, 0 /* indicates all terms*/, entries.values(), missing);
         }
-        Object[] values = entries.internalValues();
+        Object[] values = entries.values().toArray();
         Arrays.sort(values, (Comparator) comparatorType.comparator());
 
         List<InternalTermsStatsStringFacet.StringEntry> ordered = Lists.newArrayList();
@@ -141,7 +142,7 @@ public class TermsStatsStringFacetExecutor extends FacetExecutor {
 
     public static class Aggregator implements HashedBytesValues.ValueInDocProc {
 
-        final ExtTHashMap<HashedBytesRef, InternalTermsStatsStringFacet.StringEntry> entries;
+        final Map<HashedBytesRef, InternalTermsStatsStringFacet.StringEntry> entries;
 
         int missing = 0;
 
@@ -150,7 +151,7 @@ public class TermsStatsStringFacetExecutor extends FacetExecutor {
 
         ValueAggregator valueAggregator = new ValueAggregator();
 
-        public Aggregator(ExtTHashMap<HashedBytesRef, InternalTermsStatsStringFacet.StringEntry> entries) {
+        public Aggregator(Map<HashedBytesRef, InternalTermsStatsStringFacet.StringEntry> entries) {
             this.entries = entries;
         }
 
@@ -197,7 +198,7 @@ public class TermsStatsStringFacetExecutor extends FacetExecutor {
     public static class ScriptAggregator extends Aggregator {
         private final SearchScript script;
 
-        public ScriptAggregator(ExtTHashMap<HashedBytesRef, InternalTermsStatsStringFacet.StringEntry> entries, SearchScript script) {
+        public ScriptAggregator(Map<HashedBytesRef, InternalTermsStatsStringFacet.StringEntry> entries, SearchScript script) {
             super(entries);
             this.script = script;
         }

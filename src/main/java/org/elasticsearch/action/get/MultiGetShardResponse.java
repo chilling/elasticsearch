@@ -19,17 +19,15 @@
 
 package org.elasticsearch.action.get;
 
-import org.elasticsearch.action.ActionResponse;
-import org.elasticsearch.common.io.stream.StreamInput;
-import org.elasticsearch.common.io.stream.StreamOutput;
-import org.elasticsearch.util.ESCollections;
-import org.elasticsearch.util.ESCollections.IntList;
-
-import com.carrotsearch.hppc.IntArrayList;
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+
+import org.elasticsearch.action.ActionResponse;
+import org.elasticsearch.common.io.stream.StreamInput;
+import org.elasticsearch.common.io.stream.StreamOutput;
+
+import com.carrotsearch.hppc.IntArrayList;
 
 public class MultiGetShardResponse extends ActionResponse {
 

@@ -19,16 +19,23 @@
 
 package org.elasticsearch.search.facet.histogram;
 
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.Iterator;
+import java.util.List;
+
 import org.elasticsearch.common.CacheRecycler;
 import org.elasticsearch.common.io.stream.StreamInput;
 import org.elasticsearch.common.io.stream.StreamOutput;
-import org.elasticsearch.common.trove.ExtTLongObjectHashMap;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.common.xcontent.XContentBuilderString;
 import org.elasticsearch.search.facet.Facet;
 
-import java.io.IOException;
-import java.util.*;
+import com.carrotsearch.hppc.LongObjectOpenHashMap;
 
 /**
  *
@@ -111,7 +118,7 @@ public class InternalFullHistogramFacet extends InternalHistogramFacet {
     }
 
     private ComparatorType comparatorType;
-    ExtTLongObjectHashMap<FullEntry> tEntries;
+    LongObjectOpenHashMap<FullEntry> tEntries;
     boolean cachedEntries;
     Collection<FullEntry> entries;
 
@@ -122,12 +129,12 @@ public class InternalFullHistogramFacet extends InternalHistogramFacet {
         super(name);
     }
 
-    public InternalFullHistogramFacet(String name, ComparatorType comparatorType, ExtTLongObjectHashMap<InternalFullHistogramFacet.FullEntry> entries, boolean cachedEntries) {
+    public InternalFullHistogramFacet(String name, ComparatorType comparatorType, LongObjectOpenHashMap<InternalFullHistogramFacet.FullEntry> entries, boolean cachedEntries) {
         super(name);
         this.comparatorType = comparatorType;
         this.tEntries = entries;
         this.cachedEntries = cachedEntries;
-        this.entries = entries.valueCollection();
+        this.entries = Arrays.asList(entries.values().toArray(InternalFullHistogramFacet.FullEntry.class));
     }
 
     @Override
@@ -162,7 +169,7 @@ public class InternalFullHistogramFacet extends InternalHistogramFacet {
             return internalFacet;
         }
 
-        ExtTLongObjectHashMap<FullEntry> map = CacheRecycler.popLongObjectMap();
+        LongObjectOpenHashMap<FullEntry> map = CacheRecycler.popLongObjectMap();
 
         for (Facet facet : facets) {
             InternalFullHistogramFacet histoFacet = (InternalFullHistogramFacet) facet;
@@ -186,7 +193,7 @@ public class InternalFullHistogramFacet extends InternalHistogramFacet {
         }
 
         // sort
-        Object[] values = map.internalValues();
+        Object[] values = map.values().toArray();
         Arrays.sort(values, (Comparator) comparatorType.comparator());
         List<FullEntry> ordered = new ArrayList<FullEntry>(map.size());
         for (int i = 0; i < map.size(); i++) {

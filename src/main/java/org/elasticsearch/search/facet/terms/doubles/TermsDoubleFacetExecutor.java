@@ -19,6 +19,7 @@
 
 package org.elasticsearch.search.facet.terms.doubles;
 
+import com.carrotsearch.hppc.DoubleIntOpenHashMap;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import gnu.trove.iterator.TDoubleIntIterator;
@@ -54,7 +55,7 @@ public class TermsDoubleFacetExecutor extends FacetExecutor {
     private final SearchScript script;
     private final ImmutableSet<BytesRef> excluded;
 
-    final TDoubleIntHashMap facets;
+    final DoubleIntOpenHashMap facets;
     long missing;
     long total;
 
@@ -163,7 +164,7 @@ public class TermsDoubleFacetExecutor extends FacetExecutor {
 
         private final TDoubleHashSet excluded;
 
-        public AggregatorValueProc(TDoubleIntHashMap facets, Set<BytesRef> excluded, SearchScript script) {
+        public AggregatorValueProc(DoubleIntOpenHashMap facets, Set<BytesRef> excluded, SearchScript script) {
             super(facets);
             this.script = script;
             if (excluded == null || excluded.isEmpty()) {
@@ -202,18 +203,18 @@ public class TermsDoubleFacetExecutor extends FacetExecutor {
 
     public static class StaticAggregatorValueProc implements DoubleValues.ValueInDocProc {
 
-        private final TDoubleIntHashMap facets;
+        private final DoubleIntOpenHashMap facets;
 
         private int missing;
         private int total;
 
-        public StaticAggregatorValueProc(TDoubleIntHashMap facets) {
+        public StaticAggregatorValueProc(DoubleIntOpenHashMap facets) {
             this.facets = facets;
         }
 
         @Override
         public void onValue(int docId, double value) {
-            facets.adjustOrPutValue(value, 1, 1);
+            facets.putOrAdd(value, 1, 1);
             total++;
         }
 
@@ -222,7 +223,7 @@ public class TermsDoubleFacetExecutor extends FacetExecutor {
             missing++;
         }
 
-        public final TDoubleIntHashMap facets() {
+        public final DoubleIntOpenHashMap facets() {
             return facets;
         }
 

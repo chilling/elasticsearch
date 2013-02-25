@@ -19,8 +19,21 @@
 
 package org.elasticsearch.action.search.type;
 
+import static org.elasticsearch.action.search.type.TransportSearchHelper.internalSearchRequest;
+
+import java.util.Arrays;
+import java.util.Map;
+import java.util.Queue;
+import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
+
 import org.elasticsearch.action.ActionListener;
-import org.elasticsearch.action.search.*;
+import org.elasticsearch.action.search.ReduceSearchPhaseException;
+import org.elasticsearch.action.search.SearchOperationThreading;
+import org.elasticsearch.action.search.SearchPhaseExecutionException;
+import org.elasticsearch.action.search.SearchRequest;
+import org.elasticsearch.action.search.SearchResponse;
+import org.elasticsearch.action.search.ShardSearchFailure;
 import org.elasticsearch.action.support.TransportAction;
 import org.elasticsearch.cluster.ClusterService;
 import org.elasticsearch.cluster.ClusterState;
@@ -42,17 +55,8 @@ import org.elasticsearch.search.controller.ShardDoc;
 import org.elasticsearch.search.internal.ShardSearchRequest;
 import org.elasticsearch.search.query.QuerySearchResultProvider;
 import org.elasticsearch.threadpool.ThreadPool;
-import org.elasticsearch.util.ESCollections.IntList;
 
 import com.carrotsearch.hppc.IntArrayList;
-
-import java.util.Arrays;
-import java.util.Map;
-import java.util.Queue;
-import java.util.Set;
-import java.util.concurrent.atomic.AtomicInteger;
-
-import static org.elasticsearch.action.search.type.TransportSearchHelper.internalSearchRequest;
 
 /**
  *

@@ -19,6 +19,7 @@
 
 package org.elasticsearch.search.facet.terms.longs;
 
+import com.carrotsearch.hppc.LongIntOpenHashMap;
 import com.google.common.collect.ImmutableList;
 import gnu.trove.iterator.TLongIntIterator;
 import gnu.trove.map.hash.TLongIntHashMap;
@@ -162,7 +163,7 @@ public class InternalLongTermsFacet extends InternalTermsFacet {
             return facets.get(0);
         }
         InternalLongTermsFacet first = (InternalLongTermsFacet) facets.get(0);
-        TLongIntHashMap aggregated = CacheRecycler.popLongIntMap();
+        LongIntOpenHashMap aggregated = CacheRecycler.popLongIntMap();
         long missing = 0;
         long total = 0;
         for (Facet facet : facets) {
@@ -170,7 +171,7 @@ public class InternalLongTermsFacet extends InternalTermsFacet {
             missing += mFacet.getMissingCount();
             total += mFacet.getTotalCount();
             for (LongEntry entry : mFacet.entries) {
-                aggregated.adjustOrPutValue(entry.term, entry.getCount(), entry.getCount());
+                aggregated.putOrAdd(entry.term, entry.getCount(), entry.getCount());
             }
         }
 
