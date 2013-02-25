@@ -79,7 +79,6 @@ public class AwarenessAllocationTests extends AbstractNodesTests {
             health = client("node1").admin().cluster().prepareHealth().setWaitForGreenStatus().setWaitForNodes("3").setWaitForRelocatingShards(0).execute().actionGet();
             assertThat(health.isTimedOut(), equalTo(false));
 
-<<<<<<< HEAD
             logger.info("--> checking current state");
             ClusterState clusterState = client("node1").admin().cluster().prepareState().execute().actionGet().getState();
             //System.out.println(clusterState.routingTable().prettyPrint());
@@ -92,7 +91,7 @@ public class AwarenessAllocationTests extends AbstractNodesTests {
                     }
                 }
             }
-        } while (counts.get("node3") != 10 && (System.currentTimeMillis() - start) < 10000);
-        assertThat(counts.get("node3"), equalTo(10));
+        } while (counts.getX("node3") != 10 && (System.currentTimeMillis() - start) < 10000);
+        assertThat(counts.getX("node3"), equalTo(10));
     }
 }

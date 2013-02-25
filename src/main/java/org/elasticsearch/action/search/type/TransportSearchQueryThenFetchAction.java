@@ -124,7 +124,7 @@ public class TransportSearchQueryThenFetchAction extends TransportSearchTypeActi
                         }
                     });
                 } else {
-                    boolean localAsync = request.getOperationThreading() == SearchOperationThreading.THREAD_PER_SHARD;
+                    boolean localAsync = request.operationThreading() == SearchOperationThreading.THREAD_PER_SHARD;
                     for (final Map.Entry<SearchShardTarget, IntList> entry : docIdsToLoad.entrySet()) {
                         final DiscoveryNode node = nodes.get(entry.getKey().nodeId());
                         if (node.id().equals(nodes.localNodeId())) {
