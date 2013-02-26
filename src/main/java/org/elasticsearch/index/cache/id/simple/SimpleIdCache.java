@@ -50,6 +50,7 @@ import org.elasticsearch.index.mapper.internal.UidFieldMapper;
 import org.elasticsearch.index.settings.IndexSettings;
 
 import com.carrotsearch.hppc.ObjectIntOpenHashMap;
+import com.carrotsearch.hppc.hash.MurmurHash3;
 
 /**
  *
@@ -266,7 +267,29 @@ public class SimpleIdCache extends AbstractIndexComponent implements IdCache, Se
          * Returns an already stored instance if exists, if not, returns null;
          */
         public HashedBytesArray canReuse(HashedBytesArray id) {
-            return idToDoc.key(id);
+            
+            final Object[] keys = idToDoc.keys;
+            final boolean[] allocated = idToDoc.allocated;
+            final int hash = id.hashCode();
+            final int slot = MurmurHash3.hash(hash) & (keys.length-1);
+            
+            int assigned = idToDoc.assigned;
+
+            for (int i = 0; assigned>0; i++) {
+                int index = (slot + i) % allocated.length;
+                if(allocated[index]) {
+                    if(keys[index].hashCode() == hash) {
+                        if(id.equals(keys[index])) {
+                            return (HashedBytesArray)keys[index];
+                        }
+                    }
+                    assigned--;
+                } else {
+                    break;
+                }
+            }
+            
+            return null;
         }
     }
 }

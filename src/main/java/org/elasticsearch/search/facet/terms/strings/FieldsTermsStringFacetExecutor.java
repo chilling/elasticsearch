@@ -19,11 +19,11 @@
 
 package org.elasticsearch.search.facet.terms.strings;
 
-import com.carrotsearch.hppc.ObjectIntOpenHashMap;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
-import gnu.trove.iterator.TObjectIntIterator;
-import gnu.trove.map.hash.TObjectIntHashMap;
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.util.BytesRef;
@@ -40,10 +40,9 @@ import org.elasticsearch.search.facet.InternalFacet;
 import org.elasticsearch.search.facet.terms.support.EntryPriorityQueue;
 import org.elasticsearch.search.internal.SearchContext;
 
-import java.io.IOException;
-import java.util.Arrays;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+import com.carrotsearch.hppc.ObjectIntOpenHashMap;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 
 /**
  *
@@ -112,9 +111,17 @@ public class FieldsTermsStringFacetExecutor extends FacetExecutor {
         } else {
             if (size < EntryPriorityQueue.LIMIT) {
                 EntryPriorityQueue ordered = new EntryPriorityQueue(size, comparatorType.comparator());
-                for (TObjectIntIterator<HashedBytesRef> it = facets.iterator(); it.hasNext(); ) {
-                    it.advance();
-                    ordered.insertWithOverflow(new InternalStringTermsFacet.TermEntry(it.key().bytes, it.value()));
+                
+                final boolean[] allocated = facets.allocated;
+                final Object[] keys = facets.keys;
+                final int[] values = facets.values;
+                int assigned = facets.assigned;
+                        
+                for (int i=0; assigned>0; i++) {
+                    if(allocated[i]) {
+                        assigned--;
+                        ordered.insertWithOverflow(new InternalStringTermsFacet.TermEntry(((HashedBytesRef)keys[i]).bytes, values[i]));
+                    }
                 }
                 InternalStringTermsFacet.TermEntry[] list = new InternalStringTermsFacet.TermEntry[ordered.size()];
                 for (int i = ordered.size() - 1; i >= 0; i--) {
@@ -124,9 +131,17 @@ public class FieldsTermsStringFacetExecutor extends FacetExecutor {
                 return new InternalStringTermsFacet(facetName, comparatorType, size, Arrays.asList(list), missing, total);
             } else {
                 BoundedTreeSet<InternalStringTermsFacet.TermEntry> ordered = new BoundedTreeSet<InternalStringTermsFacet.TermEntry>(comparatorType.comparator(), size);
-                for (TObjectIntIterator<HashedBytesRef> it = facets.iterator(); it.hasNext(); ) {
-                    it.advance();
-                    ordered.add(new InternalStringTermsFacet.TermEntry(it.key().bytes, it.value()));
+                
+                final boolean[] allocated = facets.allocated;
+                final Object[] keys = facets.keys;
+                final int[] values = facets.values;
+                int assigned = facets.assigned; 
+                        
+                for (int i=0; assigned>0; i++) {
+                    if(allocated[i]) {
+                        assigned--;
+                        ordered.add(new InternalStringTermsFacet.TermEntry(((HashedBytesRef)keys[i]).bytes, values[i]));
+                    }
                 }
                 CacheRecycler.pushObjectIntMap(facets);
                 return new InternalStringTermsFacet(facetName, comparatorType, size, ordered, missing, total);

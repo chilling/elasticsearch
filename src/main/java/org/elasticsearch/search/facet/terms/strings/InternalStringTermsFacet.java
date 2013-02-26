@@ -19,10 +19,12 @@
 
 package org.elasticsearch.search.facet.terms.strings;
 
-import com.carrotsearch.hppc.ObjectIntOpenHashMap;
-import com.google.common.collect.ImmutableList;
-import gnu.trove.iterator.TObjectIntIterator;
-import gnu.trove.map.hash.TObjectIntHashMap;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Iterator;
+import java.util.List;
+
 import org.apache.lucene.util.BytesRef;
 import org.elasticsearch.common.CacheRecycler;
 import org.elasticsearch.common.bytes.BytesArray;
@@ -38,11 +40,8 @@ import org.elasticsearch.search.facet.Facet;
 import org.elasticsearch.search.facet.terms.InternalTermsFacet;
 import org.elasticsearch.search.facet.terms.TermsFacet;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Iterator;
-import java.util.List;
+import com.carrotsearch.hppc.ObjectIntOpenHashMap;
+import com.google.common.collect.ImmutableList;
 
 /**
  *
@@ -185,10 +184,19 @@ public class InternalStringTermsFacet extends InternalTermsFacet {
         }
 
         BoundedTreeSet<TermEntry> ordered = new BoundedTreeSet<TermEntry>(first.comparatorType.comparator(), first.requiredSize);
-        for (TObjectIntIterator<Text> it = aggregated.iterator(); it.hasNext(); ) {
-            it.advance();
-            ordered.add(new TermEntry(it.key(), it.value()));
+        
+        final boolean[] allocated = aggregated.allocated;
+        final Object[] keys = aggregated.keys;
+        final int[] values = aggregated.values;
+        int assigned = aggregated.assigned;
+        
+        for (int i = 0; assigned>0; i++) {
+            if(allocated[i]) {
+                assigned--;
+                ordered.add(new TermEntry((Text)keys[i], values[i]));
+            }
         }
+        
         first.entries = ordered;
         first.missing = missing;
         first.total = total;

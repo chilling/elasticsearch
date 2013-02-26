@@ -24,6 +24,7 @@ import org.elasticsearch.common.bytes.HashedBytesArray;
 import org.elasticsearch.index.cache.id.IdReaderTypeCache;
 
 import com.carrotsearch.hppc.ObjectIntOpenHashMap;
+import com.carrotsearch.hppc.hash.MurmurHash3;
 
 /**
  *
@@ -79,7 +80,29 @@ public class SimpleIdReaderTypeCache implements IdReaderTypeCache {
      * Returns an already stored instance if exists, if not, returns null;
      */
     public HashedBytesArray canReuse(HashedBytesArray id) {
-        return idToDoc.key(id);
+        final Object[] keys = idToDoc.keys;
+        final boolean[] allocated = idToDoc.allocated;
+        final int hash = id.hashCode();
+        final int slot = MurmurHash3.hash(hash) & (keys.length-1);
+
+        int assigned = idToDoc.assigned;
+        
+        for (int i = 0; assigned>0; i++) {
+            int index = (slot + i) % allocated.length;
+            if(allocated[index]) {
+                if(keys[index].hashCode() == hash) {
+                    if(id.equals(keys[index])) {
+                        return (HashedBytesArray)keys[index];
+                    }
+                }
+                assigned--;
+            } else {
+                break;
+            }
+        }
+        
+        return null;
+
     }
 
     long computeSizeInBytes() {
@@ -90,10 +113,13 @@ public class SimpleIdReaderTypeCache implements IdReaderTypeCache {
         sizeInBytes += (idToDoc.allocated.length - idToDoc.assigned) * RamUsage.NUM_BYTES_OBJECT_REF;
         
         final boolean[] allocated = idToDoc.allocated;
-        final HashedBytesArray[] keys = idToDoc.keys;
-        for (int i = 0; i < allocated.length; i++) {
+        final Object[] keys = idToDoc.keys;
+        int assigned = idToDoc.assigned;
+        
+        for (int i = 0; assigned>0; i++) {
             if(allocated[i]) {
-                sizeInBytes += RamUsage.NUM_BYTES_OBJECT_HEADER + (keys[i].length() + RamUsage.NUM_BYTES_INT);
+                sizeInBytes += RamUsage.NUM_BYTES_OBJECT_HEADER + (((HashedBytesArray)keys[i]).length() + RamUsage.NUM_BYTES_INT);
+                assigned--;
             }
         }
         

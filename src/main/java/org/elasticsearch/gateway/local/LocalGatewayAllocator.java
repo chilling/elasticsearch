@@ -129,14 +129,16 @@ public class LocalGatewayAllocator extends AbstractComponent implements GatewayA
             Set<DiscoveryNode> nodesWithHighestVersion = Sets.newHashSet();
             
             final boolean[] allocated = nodesState.allocated;
-            final DiscoveryNode[] keys = nodesState.keys;
+            final Object[] keys = nodesState.keys;
             final long[] values = nodesState.values;
+            int assigned = nodesState.assigned;
             
-            for (int i=0; i<allocated.length; i++) {
+            for (int i=0; assigned>0; i++) {
                 if(!allocated[i]) {
                     continue;
                 }
-                DiscoveryNode node = keys[i];
+                assigned--;
+                DiscoveryNode node = (DiscoveryNode)keys[i];
                 long version = values[i];
                 // since we don't check in NO allocation, we need to double check here
                 if (allocation.shouldIgnoreShardForNode(shard.shardId(), node.id())) {
@@ -370,10 +372,15 @@ public class LocalGatewayAllocator extends AbstractComponent implements GatewayA
         } else {
             // clean nodes that have failed
             final boolean[] allocated = shardStates.allocated;
-            final DiscoveryNode[] keys = shardStates.keys;
-            for(int i=0; i<allocated.length; i++) {
-                if(allocated[i] && !nodes.nodeExists(keys[i].getId())) {
-                    allocated[i] = false;
+            final Object[] keys = shardStates.keys;
+            int assigned = shardStates.assigned;
+            
+            for(int i=0; assigned>0; i++) {
+                if(allocated[i]) {
+                    if(!nodes.nodeExists(((DiscoveryNode)keys[i]).getId())) {
+                        allocated[i] = false;
+                    }
+                    assigned--;
                 }
             }
             

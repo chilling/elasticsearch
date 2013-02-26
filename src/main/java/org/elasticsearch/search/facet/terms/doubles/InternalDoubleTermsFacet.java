@@ -19,10 +19,12 @@
 
 package org.elasticsearch.search.facet.terms.doubles;
 
-import com.carrotsearch.hppc.DoubleIntOpenHashMap;
-import com.google.common.collect.ImmutableList;
-import gnu.trove.iterator.TDoubleIntIterator;
-import gnu.trove.map.hash.TDoubleIntHashMap;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Iterator;
+import java.util.List;
+
 import org.elasticsearch.common.CacheRecycler;
 import org.elasticsearch.common.collect.BoundedTreeSet;
 import org.elasticsearch.common.io.stream.StreamInput;
@@ -35,11 +37,8 @@ import org.elasticsearch.search.facet.Facet;
 import org.elasticsearch.search.facet.terms.InternalTermsFacet;
 import org.elasticsearch.search.facet.terms.TermsFacet;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Iterator;
-import java.util.List;
+import com.carrotsearch.hppc.DoubleIntOpenHashMap;
+import com.google.common.collect.ImmutableList;
 
 /**
  *
@@ -175,9 +174,17 @@ public class InternalDoubleTermsFacet extends InternalTermsFacet {
         }
 
         BoundedTreeSet<DoubleEntry> ordered = new BoundedTreeSet<DoubleEntry>(first.comparatorType.comparator(), first.requiredSize);
-        for (TDoubleIntIterator it = aggregated.iterator(); it.hasNext(); ) {
-            it.advance();
-            ordered.add(new DoubleEntry(it.key(), it.value()));
+        final boolean[] allocated = aggregated.allocated;
+        final double[] keys = aggregated.keys;
+        final int[] values = aggregated.values;
+        
+        int assigned = aggregated.assigned;
+        
+        for (int i=0; assigned>0; i++) {
+            if(allocated[i]) {
+                assigned--;
+                ordered.add(new DoubleEntry(keys[i], values[i]));
+            }
         }
         first.entries = ordered;
         first.missing = missing;

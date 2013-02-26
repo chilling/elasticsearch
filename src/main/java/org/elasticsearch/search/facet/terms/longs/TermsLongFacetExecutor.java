@@ -19,12 +19,10 @@
 
 package org.elasticsearch.search.facet.terms.longs;
 
-import com.carrotsearch.hppc.LongIntOpenHashMap;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
-import gnu.trove.iterator.TLongIntIterator;
-import gnu.trove.map.hash.TLongIntHashMap;
-import gnu.trove.set.hash.TLongHashSet;
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.Set;
+
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.util.BytesRef;
@@ -39,9 +37,10 @@ import org.elasticsearch.search.facet.terms.TermsFacet;
 import org.elasticsearch.search.facet.terms.support.EntryPriorityQueue;
 import org.elasticsearch.search.internal.SearchContext;
 
-import java.io.IOException;
-import java.util.Arrays;
-import java.util.Set;
+import com.carrotsearch.hppc.LongIntOpenHashMap;
+import com.carrotsearch.hppc.LongOpenHashSet;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 
 /**
  *
@@ -96,9 +95,17 @@ public class TermsLongFacetExecutor extends FacetExecutor {
         } else {
             if (size < EntryPriorityQueue.LIMIT) {
                 EntryPriorityQueue ordered = new EntryPriorityQueue(size, comparatorType.comparator());
-                for (TLongIntIterator it = facets.iterator(); it.hasNext(); ) {
-                    it.advance();
-                    ordered.insertWithOverflow(new InternalLongTermsFacet.LongEntry(it.key(), it.value()));
+                
+                final boolean[] allocated = facets.allocated;
+                final long[] keys = facets.keys;
+                final int[] values = facets.values;
+                int assigned = facets.assigned;
+                
+                for (int i=0; assigned>0; i++) {
+                    if(allocated[i]) {
+                        assigned--;
+                        ordered.insertWithOverflow(new InternalLongTermsFacet.LongEntry(keys[i], values[i]));
+                    }
                 }
                 InternalLongTermsFacet.LongEntry[] list = new InternalLongTermsFacet.LongEntry[ordered.size()];
                 for (int i = ordered.size() - 1; i >= 0; i--) {
@@ -108,9 +115,18 @@ public class TermsLongFacetExecutor extends FacetExecutor {
                 return new InternalLongTermsFacet(facetName, comparatorType, size, Arrays.asList(list), missing, total);
             } else {
                 BoundedTreeSet<InternalLongTermsFacet.LongEntry> ordered = new BoundedTreeSet<InternalLongTermsFacet.LongEntry>(comparatorType.comparator(), size);
-                for (TLongIntIterator it = facets.iterator(); it.hasNext(); ) {
-                    it.advance();
-                    ordered.add(new InternalLongTermsFacet.LongEntry(it.key(), it.value()));
+                
+                final boolean[] allocated = facets.allocated;
+                final long[] keys = facets.keys;
+                final int[] values = facets.values;
+                
+                int assigned = facets.assigned;
+                
+                for (int i=0; assigned>0; i++) {
+                    if(allocated[i]) {
+                        assigned--;
+                        ordered.add(new InternalLongTermsFacet.LongEntry(keys[i], values[i]));
+                    }
                 }
                 CacheRecycler.pushLongIntMap(facets);
                 return new InternalLongTermsFacet(facetName, comparatorType, size, ordered, missing, total);
@@ -162,7 +178,7 @@ public class TermsLongFacetExecutor extends FacetExecutor {
 
         private final SearchScript script;
 
-        private final TLongHashSet excluded;
+        private final LongOpenHashSet excluded;
 
         public AggregatorValueProc(LongIntOpenHashMap facets, Set<BytesRef> excluded, SearchScript script) {
             super(facets);
@@ -170,7 +186,7 @@ public class TermsLongFacetExecutor extends FacetExecutor {
             if (excluded == null || excluded.isEmpty()) {
                 this.excluded = null;
             } else {
-                this.excluded = new TLongHashSet(excluded.size());
+                this.excluded = new LongOpenHashSet(excluded.size());
                 for (BytesRef s : excluded) {
                     this.excluded.add(Long.parseLong(s.utf8ToString()));
                 }

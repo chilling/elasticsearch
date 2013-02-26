@@ -19,12 +19,10 @@
 
 package org.elasticsearch.search.facet.terms.doubles;
 
-import com.carrotsearch.hppc.DoubleIntOpenHashMap;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
-import gnu.trove.iterator.TDoubleIntIterator;
-import gnu.trove.map.hash.TDoubleIntHashMap;
-import gnu.trove.set.hash.TDoubleHashSet;
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.Set;
+
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.util.BytesRef;
@@ -39,9 +37,10 @@ import org.elasticsearch.search.facet.terms.TermsFacet;
 import org.elasticsearch.search.facet.terms.support.EntryPriorityQueue;
 import org.elasticsearch.search.internal.SearchContext;
 
-import java.io.IOException;
-import java.util.Arrays;
-import java.util.Set;
+import com.carrotsearch.hppc.DoubleIntOpenHashMap;
+import com.carrotsearch.hppc.DoubleOpenHashSet;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 
 /**
  *
@@ -96,9 +95,17 @@ public class TermsDoubleFacetExecutor extends FacetExecutor {
         } else {
             if (size < EntryPriorityQueue.LIMIT) {
                 EntryPriorityQueue ordered = new EntryPriorityQueue(size, comparatorType.comparator());
-                for (TDoubleIntIterator it = facets.iterator(); it.hasNext(); ) {
-                    it.advance();
-                    ordered.insertWithOverflow(new InternalDoubleTermsFacet.DoubleEntry(it.key(), it.value()));
+                
+                final boolean[] allocated = facets.allocated;
+                final double[] keys = facets.keys;
+                final int[] values = facets.values;
+                int assigned = facets.assigned;
+                
+                for (int i=0; assigned>0; i++) {
+                    if(allocated[i]) {
+                        assigned--;
+                        ordered.insertWithOverflow(new InternalDoubleTermsFacet.DoubleEntry(keys[i], values[i]));
+                    }
                 }
                 InternalDoubleTermsFacet.DoubleEntry[] list = new InternalDoubleTermsFacet.DoubleEntry[ordered.size()];
                 for (int i = ordered.size() - 1; i >= 0; i--) {
@@ -108,9 +115,17 @@ public class TermsDoubleFacetExecutor extends FacetExecutor {
                 return new InternalDoubleTermsFacet(facetName, comparatorType, size, Arrays.asList(list), missing, total);
             } else {
                 BoundedTreeSet<InternalDoubleTermsFacet.DoubleEntry> ordered = new BoundedTreeSet<InternalDoubleTermsFacet.DoubleEntry>(comparatorType.comparator(), size);
-                for (TDoubleIntIterator it = facets.iterator(); it.hasNext(); ) {
-                    it.advance();
-                    ordered.add(new InternalDoubleTermsFacet.DoubleEntry(it.key(), it.value()));
+                
+                final boolean[] allocated = facets.allocated;
+                final double[] keys = facets.keys;
+                final int[] values = facets.values;
+                int assigned = facets.assigned;
+                
+                for (int i=0; assigned>0; i++) {
+                    if(allocated[i]) {
+                        assigned--;
+                        ordered.add(new InternalDoubleTermsFacet.DoubleEntry(keys[i], values[i]));
+                    }
                 }
                 CacheRecycler.pushDoubleIntMap(facets);
                 return new InternalDoubleTermsFacet(facetName, comparatorType, size, ordered, missing, total);
@@ -162,7 +177,7 @@ public class TermsDoubleFacetExecutor extends FacetExecutor {
 
         private final SearchScript script;
 
-        private final TDoubleHashSet excluded;
+        private final DoubleOpenHashSet excluded;
 
         public AggregatorValueProc(DoubleIntOpenHashMap facets, Set<BytesRef> excluded, SearchScript script) {
             super(facets);
@@ -170,7 +185,7 @@ public class TermsDoubleFacetExecutor extends FacetExecutor {
             if (excluded == null || excluded.isEmpty()) {
                 this.excluded = null;
             } else {
-                this.excluded = new TDoubleHashSet(excluded.size());
+                this.excluded = new DoubleOpenHashSet(excluded.size());
                 for (BytesRef s : excluded) {
                     this.excluded.add(Double.parseDouble(s.utf8ToString()));
                 }

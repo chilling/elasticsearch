@@ -99,22 +99,26 @@ public class SearchPhaseController extends AbstractComponent {
             }
             
             final boolean[] allocated = result.fieldStatistics().allocated;
-            final String[] keys = result.fieldStatistics().keys;
-            final CollectionStatistics[] values = result.fieldStatistics().values;
+            final Object[] keys = result.fieldStatistics().keys;
+            final Object[] values = result.fieldStatistics().values;
             
-            for (int i = 0; i<allocated.length; i++) {
+            int assigned = result.fieldStatistics().assigned;
+            
+            for (int i = 0; assigned>0; i++) {
                 if(allocated[i]) {
-                    CollectionStatistics existing = fieldStatistics.get(keys[i]);
+                    assigned--;
+                    CollectionStatistics existing = fieldStatistics.get((String)keys[i]);
                     if (existing != null) {
+                        CollectionStatistics value = (CollectionStatistics)values[i];
                         CollectionStatistics merged = new CollectionStatistics(
-                                keys[i], existing.maxDoc() + values[i].maxDoc(),
-                                existing.docCount() + values[i].docCount(),
-                                existing.sumTotalTermFreq() + values[i].sumTotalTermFreq(),
-                                existing.sumDocFreq() + values[i].sumDocFreq()
+                                (String)keys[i], existing.maxDoc() + value.maxDoc(),
+                                existing.docCount() + value.docCount(),
+                                existing.sumTotalTermFreq() + value.sumTotalTermFreq(),
+                                existing.sumDocFreq() + value.sumDocFreq()
                         );
-                        fieldStatistics.put(keys[i], merged);
+                        fieldStatistics.put((String)keys[i], merged);
                     } else {
-                        fieldStatistics.put(keys[i], values[i]);
+                        fieldStatistics.put((String)keys[i], (CollectionStatistics)values[i]);
                     }
                 }
             }

@@ -162,16 +162,19 @@ public class DfsSearchResult extends TransportResponse implements SearchPhaseRes
         out.writeVInt(fieldStatistics.size());
         
         final boolean[] allocated = fieldStatistics.allocated;
-        final String[] keys = fieldStatistics.keys;
-        final CollectionStatistics[] values = fieldStatistics.values;
+        final Object[] keys = fieldStatistics.keys;
+        final Object[] values = fieldStatistics.values;
         
-        for (int i=0; i<allocated.length;) {
+        int assigned = fieldStatistics.assigned;
+        
+        for (int i=0; assigned>0; i++) {
             if(allocated[i]) {
-                out.writeString(keys[i]);
-                out.writeVLong(values[i].maxDoc());
-                out.writeVLong(values[i].docCount());
-                out.writeVLong(values[i].sumTotalTermFreq());
-                out.writeVLong(values[i].sumDocFreq());
+                assigned--;
+                out.writeString((String)keys[i]);
+                out.writeVLong(((CollectionStatistics)values[i]).maxDoc());
+                out.writeVLong(((CollectionStatistics)values[i]).docCount());
+                out.writeVLong(((CollectionStatistics)values[i]).sumTotalTermFreq());
+                out.writeVLong(((CollectionStatistics)values[i]).sumDocFreq());
             }
         }
         out.writeVInt(maxDoc);

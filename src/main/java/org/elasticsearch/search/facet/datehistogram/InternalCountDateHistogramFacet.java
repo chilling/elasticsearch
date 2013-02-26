@@ -19,8 +19,6 @@
 
 package org.elasticsearch.search.facet.datehistogram;
 
-import gnu.trove.iterator.TLongLongIterator;
-
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Iterator;
@@ -34,6 +32,8 @@ import org.elasticsearch.common.xcontent.XContentBuilderString;
 import org.elasticsearch.search.facet.Facet;
 
 import com.carrotsearch.hppc.LongLongOpenHashMap;
+import com.carrotsearch.hppc.ObjectIntOpenHashMap;
+import com.carrotsearch.hppc.hash.MurmurHash3;
 
 /**
  *
@@ -41,7 +41,7 @@ import com.carrotsearch.hppc.LongLongOpenHashMap;
 public class InternalCountDateHistogramFacet extends InternalDateHistogramFacet {
 
     private static final String STREAM_TYPE = "cdHistogram";
-
+    
     public static void registerStreams() {
         Streams.registerStream(STREAM, STREAM_TYPE);
     }
@@ -146,9 +146,15 @@ public class InternalCountDateHistogramFacet extends InternalDateHistogramFacet 
         }
         entries = new CountEntry[counts.size()];
         int i = 0;
-        for (TLongLongIterator it = counts.iterator(); it.hasNext(); ) {
-            it.advance();
-            entries[i++] = new CountEntry(it.key(), it.value());
+        
+        final boolean[] allocated = counts.allocated;
+        final long[] keys = counts.keys;
+        final long[] values = counts.values;
+
+        for (int j = 0; i < counts.assigned ; j++) {
+            if(allocated[j]) {
+                entries[i++] = new CountEntry(keys[j], values[j]);
+            }
         }
         releaseCache();
         Arrays.sort(entries, comparatorType.comparator());
@@ -164,9 +170,17 @@ public class InternalCountDateHistogramFacet extends InternalDateHistogramFacet 
 
         for (Facet facet : facets) {
             InternalCountDateHistogramFacet histoFacet = (InternalCountDateHistogramFacet) facet;
-            for (TLongLongIterator it = histoFacet.counts.iterator(); it.hasNext(); ) {
-                it.advance();
-                counts.putOrAdd(it.key(), it.value(), it.value());
+            
+            final boolean[] allocated = histoFacet.counts.allocated;
+            final long[] keys = histoFacet.counts.keys;
+            final long[] values = histoFacet.counts.values;
+            int assigned = histoFacet.counts.assigned;
+
+            for (int i = 0; assigned>0; i++) {
+                if(allocated[i]) {
+                    assigned--;
+                    counts.putOrAdd(keys[i], values[i], values[i]);
+                }
             }
             histoFacet.releaseCache();
 
@@ -223,11 +237,20 @@ public class InternalCountDateHistogramFacet extends InternalDateHistogramFacet 
         super.writeTo(out);
         out.writeByte(comparatorType.id());
         out.writeVInt(counts.size());
-        for (TLongLongIterator it = counts.iterator(); it.hasNext(); ) {
-            it.advance();
-            out.writeLong(it.key());
-            out.writeVLong(it.value());
+        
+        final boolean[] allocated = counts.allocated;
+        final long[] keys = counts.keys;
+        final long[] values = counts.values;
+        int assigned = counts.assigned;
+
+        for (int i = 0; assigned>0; i++) {
+            if(allocated[i]) {
+                assigned--;
+                out.writeLong(keys[i]);
+                out.writeVLong(values[i]);
+            }
         }
+
         releaseCache();
     }
 }

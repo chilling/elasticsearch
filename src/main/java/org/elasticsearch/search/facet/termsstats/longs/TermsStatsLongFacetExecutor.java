@@ -19,13 +19,14 @@
 
 package org.elasticsearch.search.facet.termsstats.longs;
 
-import com.carrotsearch.hppc.LongObjectOpenHashMap;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Lists;
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.Comparator;
+import java.util.List;
+
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.search.Scorer;
 import org.elasticsearch.common.CacheRecycler;
-import org.elasticsearch.common.trove.ExtTLongObjectHashMap;
 import org.elasticsearch.index.fielddata.DoubleValues;
 import org.elasticsearch.index.fielddata.IndexNumericFieldData;
 import org.elasticsearch.index.fielddata.LongValues;
@@ -33,12 +34,12 @@ import org.elasticsearch.script.SearchScript;
 import org.elasticsearch.search.facet.FacetExecutor;
 import org.elasticsearch.search.facet.InternalFacet;
 import org.elasticsearch.search.facet.termsstats.TermsStatsFacet;
+import org.elasticsearch.search.facet.termsstats.longs.InternalTermsStatsLongFacet.LongEntry;
 import org.elasticsearch.search.internal.SearchContext;
 
-import java.io.IOException;
-import java.util.Arrays;
-import java.util.Comparator;
-import java.util.List;
+import com.carrotsearch.hppc.LongObjectOpenHashMap;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
 
 public class TermsStatsLongFacetExecutor extends FacetExecutor {
 
@@ -77,7 +78,7 @@ public class TermsStatsLongFacetExecutor extends FacetExecutor {
         }
         if (size == 0) { // all terms
             // all terms, just return the collection, we will sort it on the way back
-            return new InternalTermsStatsLongFacet(facetName, comparatorType, 0 /* indicates all terms*/, entries.valueCollection(), missing);
+            return new InternalTermsStatsLongFacet(facetName, comparatorType, 0 /* indicates all terms*/, Arrays.asList(entries.values().toArray(LongEntry.class)), missing);
         }
 
         // we need to fetch facets of "size * numberOfShards" because of problems in how they are distributed across shards

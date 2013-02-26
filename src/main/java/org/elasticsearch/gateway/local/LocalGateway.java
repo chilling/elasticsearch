@@ -162,17 +162,19 @@ public class LocalGateway extends AbstractLifecycleComponent<Gateway> implements
         metaDataBuilder.metaData(electedGlobalState).removeAllIndices();
         
         final boolean[] allocated = indices.allocated;
-        final String[] keys = indices.keys;
+        final Object[] keys = indices.keys;
+        int assigned = indices.assigned;
         
-        for(int i = 0; i<allocated.length; i++) {
+        for(int i = 0; assigned>0; i++) {
             if(allocated[i]) {
+                assigned--;
                 IndexMetaData electedIndexMetaData = null;
                 int indexMetaDataCount = 0;
                 for (TransportNodesListGatewayMetaState.NodeLocalGatewayMetaState nodeState : nodesState) {
                     if (nodeState.metaData() == null) {
                         continue;
                     }
-                    IndexMetaData indexMetaData = nodeState.metaData().index(keys[i]);
+                    IndexMetaData indexMetaData = nodeState.metaData().index((String)keys[i]);
                     if (indexMetaData == null) {
                         continue;
                     }

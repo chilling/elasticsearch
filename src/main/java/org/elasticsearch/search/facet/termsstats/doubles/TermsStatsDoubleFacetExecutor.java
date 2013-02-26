@@ -19,25 +19,26 @@
 
 package org.elasticsearch.search.facet.termsstats.doubles;
 
-import com.carrotsearch.hppc.DoubleObjectOpenHashMap;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Lists;
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.Comparator;
+import java.util.List;
+
 import org.apache.lucene.index.AtomicReaderContext;
 import org.apache.lucene.search.Scorer;
 import org.elasticsearch.common.CacheRecycler;
-import org.elasticsearch.common.trove.ExtTDoubleObjectHashMap;
 import org.elasticsearch.index.fielddata.DoubleValues;
 import org.elasticsearch.index.fielddata.IndexNumericFieldData;
 import org.elasticsearch.script.SearchScript;
 import org.elasticsearch.search.facet.FacetExecutor;
 import org.elasticsearch.search.facet.InternalFacet;
 import org.elasticsearch.search.facet.termsstats.TermsStatsFacet;
+import org.elasticsearch.search.facet.termsstats.doubles.InternalTermsStatsDoubleFacet.DoubleEntry;
 import org.elasticsearch.search.internal.SearchContext;
 
-import java.io.IOException;
-import java.util.Arrays;
-import java.util.Comparator;
-import java.util.List;
+import com.carrotsearch.hppc.DoubleObjectOpenHashMap;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
 
 public class TermsStatsDoubleFacetExecutor extends FacetExecutor {
 
@@ -77,7 +78,7 @@ public class TermsStatsDoubleFacetExecutor extends FacetExecutor {
         }
         if (size == 0) { // all terms
             // all terms, just return the collection, we will sort it on the way back
-            return new InternalTermsStatsDoubleFacet(facetName, comparatorType, 0 /* indicates all terms*/, entries.valueCollection(), missing);
+            return new InternalTermsStatsDoubleFacet(facetName, comparatorType, 0 /* indicates all terms*/, Arrays.asList(entries.values().toArray(DoubleEntry.class)), missing);
         }
         Object[] values = entries.values().toArray();
         Arrays.sort(values, (Comparator) comparatorType.comparator());

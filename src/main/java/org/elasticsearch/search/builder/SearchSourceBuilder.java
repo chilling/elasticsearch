@@ -703,12 +703,15 @@ public class SearchSourceBuilder implements ToXContent {
             builder.startObject("indices_boost");
             
             final boolean[] allocated = indexBoost.allocated;
-            final String[] keys = indexBoost.keys;
+            final Object[] keys = indexBoost.keys;
             final float[] value = indexBoost.values;
 
-            for (int i = 0; i < allocated.length; i++) {
+            int assigned = indexBoost.assigned;
+            
+            for (int i = 0; assigned>0; i++) {
                 if(allocated[i]) {
-                    builder.field(keys[i], value[i]);
+                    builder.field((String)keys[i], value[i]);
+                    assigned--;
                 }
             }
             builder.endObject();

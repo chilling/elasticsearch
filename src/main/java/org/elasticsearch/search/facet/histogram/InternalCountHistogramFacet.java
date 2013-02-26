@@ -19,8 +19,11 @@
 
 package org.elasticsearch.search.facet.histogram;
 
-import gnu.trove.iterator.TLongLongIterator;
-import gnu.trove.map.hash.TLongLongHashMap;
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.Iterator;
+import java.util.List;
+
 import org.elasticsearch.common.CacheRecycler;
 import org.elasticsearch.common.io.stream.StreamInput;
 import org.elasticsearch.common.io.stream.StreamOutput;
@@ -29,11 +32,6 @@ import org.elasticsearch.common.xcontent.XContentBuilderString;
 import org.elasticsearch.search.facet.Facet;
 
 import com.carrotsearch.hppc.LongLongOpenHashMap;
-
-import java.io.IOException;
-import java.util.Arrays;
-import java.util.Iterator;
-import java.util.List;
 
 /**
  *
@@ -137,10 +135,16 @@ public class InternalCountHistogramFacet extends InternalHistogramFacet {
             return entries;
         }
         entries = new CountEntry[counts.size()];
-        int i = 0;
-        for (TLongLongIterator it = counts.iterator(); it.hasNext(); ) {
-            it.advance();
-            entries[i++] = new CountEntry(it.key(), it.value());
+        int j = 0;
+        final boolean[] allocated = counts.allocated;
+        final long[] keys = counts.keys;
+        final long[] values = counts.values;
+        int assigned = counts.assigned;
+
+        for (int i = 0; j<assigned; i++) {
+            if(allocated[i]) {
+                entries[j++] = new CountEntry(keys[i], values[i]);
+            }
         }
         releaseCache();
         Arrays.sort(entries, comparatorType.comparator());
@@ -164,10 +168,19 @@ public class InternalCountHistogramFacet extends InternalHistogramFacet {
 
         for (Facet facet : facets) {
             InternalCountHistogramFacet histoFacet = (InternalCountHistogramFacet) facet;
-            for (TLongLongIterator it = histoFacet.counts.iterator(); it.hasNext(); ) {
-                it.advance();
-                counts.putOrAdd(it.key(), it.value(), it.value());
+            
+            final boolean[] allocated = histoFacet.counts.allocated;
+            final long[] keys = histoFacet.counts.keys;
+            final long[] values = histoFacet.counts.values;
+            int assigned = histoFacet.counts.assigned;
+
+            for (int i = 0; assigned>0; i++) {
+                if(allocated[i]) {
+                    assigned--;
+                    counts.putOrAdd(keys[i], values[i], values[i]);
+                }
             }
+            
             histoFacet.releaseCache();
         }
 
@@ -223,10 +236,18 @@ public class InternalCountHistogramFacet extends InternalHistogramFacet {
         out.writeByte(comparatorType.id());
         // optimize the write, since we know we have the same buckets as keys
         out.writeVInt(counts.size());
-        for (TLongLongIterator it = counts.iterator(); it.hasNext(); ) {
-            it.advance();
-            out.writeLong(it.key());
-            out.writeVLong(it.value());
+        
+        final boolean[] allocated = counts.allocated;
+        final long[] keys = counts.keys;
+        final long[] values = counts.values;
+        int assigned = counts.assigned;
+
+        for (int i = 0; assigned>0; i++) {
+            if(allocated[i]) {
+                assigned--;
+                out.writeLong(keys[i]);
+                out.writeVLong(values[i]);
+            }
         }
         releaseCache();
     }

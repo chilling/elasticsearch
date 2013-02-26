@@ -19,7 +19,8 @@
 
 package org.elasticsearch.search.facet.histogram;
 
-import gnu.trove.map.hash.TLongLongHashMap;
+import java.io.IOException;
+
 import org.apache.lucene.index.AtomicReaderContext;
 import org.elasticsearch.common.CacheRecycler;
 import org.elasticsearch.index.fielddata.DoubleValues;
@@ -29,8 +30,6 @@ import org.elasticsearch.search.facet.InternalFacet;
 import org.elasticsearch.search.internal.SearchContext;
 
 import com.carrotsearch.hppc.LongLongOpenHashMap;
-
-import java.io.IOException;
 
 /**
  * A histogram facet collector that uses the same field as the key as well as the
