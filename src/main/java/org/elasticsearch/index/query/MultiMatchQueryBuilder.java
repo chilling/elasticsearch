@@ -24,6 +24,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 
+import org.elasticsearch.common.hppc.DefaultObjectFloatOpenHashMap;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 
 import com.carrotsearch.hppc.ObjectFloatOpenHashMap;
@@ -92,7 +93,7 @@ public class MultiMatchQueryBuilder extends BaseQueryBuilder implements Boostabl
     public MultiMatchQueryBuilder field(String field, float boost) {
         fields.add(field);
         if (fieldsBoosts == null) {
-            fieldsBoosts = new ObjectFloatOpenHashMap<String>();
+            fieldsBoosts = new DefaultObjectFloatOpenHashMap<String>(-1.f);
         }
         fieldsBoosts.put(field, boost);
         return this;

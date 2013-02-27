@@ -29,6 +29,7 @@ import org.apache.lucene.queryparser.classic.QueryParserSettings;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.Query;
 import org.elasticsearch.common.Strings;
+import org.elasticsearch.common.hppc.DefaultObjectFloatOpenHashMap;
 import org.elasticsearch.common.inject.Inject;
 import org.elasticsearch.common.lucene.search.Queries;
 import org.elasticsearch.common.regex.Regex;
@@ -103,7 +104,7 @@ public class QueryStringQueryParser implements QueryParser {
                                 qpSettings.fields().add(field);
                                 if (fBoost != -1) {
                                     if (qpSettings.boosts() == null) {
-                                        ObjectFloatOpenHashMap<String> map = new ObjectFloatOpenHashMap<String>(ObjectFloatOpenHashMap.DEFAULT_CAPACITY, ObjectFloatOpenHashMap.DEFAULT_LOAD_FACTOR);
+                                        ObjectFloatOpenHashMap<String> map = new DefaultObjectFloatOpenHashMap<String>(1.f);
                                         qpSettings.boosts(map);
                                     }
                                     qpSettings.boosts().put(field, fBoost);
@@ -113,7 +114,7 @@ public class QueryStringQueryParser implements QueryParser {
                             qpSettings.fields().add(fField);
                             if (fBoost != -1) {
                                 if (qpSettings.boosts() == null) {
-                                    ObjectFloatOpenHashMap<String> map = new ObjectFloatOpenHashMap<String>(ObjectFloatOpenHashMap.DEFAULT_CAPACITY, ObjectFloatOpenHashMap.DEFAULT_LOAD_FACTOR);
+                                    ObjectFloatOpenHashMap<String> map = new DefaultObjectFloatOpenHashMap<String>(1.f);
                                     qpSettings.boosts(map);
                                 }
                                 qpSettings.boosts().put(fField, fBoost);

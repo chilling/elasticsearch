@@ -91,15 +91,15 @@ public class AggregatedDfs implements Streamable {
         out.writeVInt(termStatistics.size());
         
         final boolean[] tStatsAllocated = termStatistics.allocated;
-        final Term[] tStatsKeys = termStatistics.keys;
-        final TermStatistics[] tStatsValues = termStatistics.values;
+        final Object[] tStatsKeys = termStatistics.keys;
+        final Object[] tStatsValues = termStatistics.values;
         
         for(int i=0; i<tStatsAllocated.length; i++) {
             if(tStatsAllocated[i]) {
-                Term term = tStatsKeys[i];
+                Term term = (Term)tStatsKeys[i];
                 out.writeString(term.field());
                 out.writeBytesRef(term.bytes());
-                TermStatistics stats = tStatsValues[i];
+                TermStatistics stats = (TermStatistics)tStatsValues[i];
                 out.writeBytesRef(stats.term());
                 out.writeVLong(stats.docFreq());
                 out.writeVLong(stats.totalTermFreq());
@@ -109,16 +109,17 @@ public class AggregatedDfs implements Streamable {
         out.writeVInt(fieldStatistics.size());
 
         final boolean[] fStatsAllocated = fieldStatistics.allocated;
-        final String[] fStatsKeys = fieldStatistics.keys;
-        final CollectionStatistics[] fStatsValues = fieldStatistics.values;
+        final Object[] fStatsKeys = fieldStatistics.keys;
+        final Object[] fStatsValues = fieldStatistics.values;
 
         for (int i = 0; i < fStatsAllocated.length; i++) {
             if(fStatsAllocated[i]) {
-                out.writeString(fStatsKeys[i]);
-                out.writeVLong(fStatsValues[i].maxDoc());
-                out.writeVLong(fStatsValues[i].docCount());
-                out.writeVLong(fStatsValues[i].sumTotalTermFreq());
-                out.writeVLong(fStatsValues[i].sumDocFreq());
+                out.writeString((String)fStatsKeys[i]);
+                CollectionStatistics fStatsValue = (CollectionStatistics)fStatsValues[i];
+                out.writeVLong(fStatsValue.maxDoc());
+                out.writeVLong(fStatsValue.docCount());
+                out.writeVLong(fStatsValue.sumTotalTermFreq());
+                out.writeVLong(fStatsValue.sumDocFreq());
             }
         }
 
