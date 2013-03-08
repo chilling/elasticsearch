@@ -85,7 +85,7 @@ public class TermsStatsLongFacetExecutor extends FacetExecutor {
         Object[] values = entries.values().toArray();
         Arrays.sort(values, (Comparator) comparatorType.comparator());
 
-        int limit = size;
+        int limit = size<values.length?size:values.length;
         List<InternalTermsStatsLongFacet.LongEntry> ordered = Lists.newArrayList();
         for (int i = 0; i < limit; i++) {
             InternalTermsStatsLongFacet.LongEntry value = (InternalTermsStatsLongFacet.LongEntry) values[i];

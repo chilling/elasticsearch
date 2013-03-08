@@ -85,7 +85,7 @@ public class TermsStatsStringFacetExecutor extends FacetExecutor {
         Arrays.sort(values, (Comparator) comparatorType.comparator());
 
         List<InternalTermsStatsStringFacet.StringEntry> ordered = Lists.newArrayList();
-        int limit = size;
+        int limit = size<values.length?size:values.length;
         for (int i = 0; i < limit; i++) {
             InternalTermsStatsStringFacet.StringEntry value = (InternalTermsStatsStringFacet.StringEntry) values[i];
             if (value == null) {

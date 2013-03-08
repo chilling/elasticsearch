@@ -83,7 +83,7 @@ public class TermsStatsDoubleFacetExecutor extends FacetExecutor {
         Object[] values = entries.values().toArray();
         Arrays.sort(values, (Comparator) comparatorType.comparator());
 
-        int limit = size;
+        int limit = size<values.length?size:values.length;
         List<InternalTermsStatsDoubleFacet.DoubleEntry> ordered = Lists.newArrayList();
         for (int i = 0; i < limit; i++) {
             InternalTermsStatsDoubleFacet.DoubleEntry value = (InternalTermsStatsDoubleFacet.DoubleEntry) values[i];
