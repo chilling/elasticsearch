@@ -215,7 +215,6 @@ public class ShapeBuilder {
             }
             xcontent.endArray();
         }
-
     }
 
     /**
@@ -327,7 +326,6 @@ public class ShapeBuilder {
             }
             xcontent.endArray();
         }
-
     }
 
     /**
@@ -420,5 +418,6 @@ public class ShapeBuilder {
             }
             xcontent.endArray();
         }
+
     }
 }
