@@ -364,6 +364,24 @@ public class ShapeBuilder {
             return new JtsGeometry(toLinearRing(), GeoShapeConstants.SPATIAL_CONTEXT, true);
         }
 
+        private Coordinate datelineIntersection(Coordinate p1, Coordinate p2) {
+            if(p1.x == p2.x) {
+                return null;
+            } else {
+                final double t = (+180 - p1.x) / (p2.x - p1.x);
+                final double s = (-180 - p1.x) / (p2.x - p1.x);
+
+                if((t > 1 || t <= 0) && (s >= 1 || s < 0)) {
+                    return null;
+                } else {
+                    final double d = (t <= 1 || t > 0) ?t :s;
+                    final double x = p1.x + d * (p2.x - p1.x); 
+                    final double y = p1.y + d * (p2.y - p1.y);
+                    return new Coordinate(x, y);
+                }
+            }
+        }
+        
         /**
          * Creates the raw {@link Polygon}
          *
@@ -371,13 +389,31 @@ public class ShapeBuilder {
          */
         protected LinearRing toLinearRing() {
             this.close();
-            Coordinate[] coordinates = new Coordinate[points.size()];
-            for (int i = 0; i < coordinates.length; i++) {
-                coordinates[i] = new Coordinate(points.get(i).getX(), points.get(i).getY());
+            
+            ArrayList<Coordinate> currentRing = new ArrayList<Coordinate>(points.size());
+            
+            currentRing.add(new Coordinate(points.get(0).getX(), points.get(0).getY()));
+            
+            Coordinate lastIntersection = null;
+            
+            for (int i = 1; i < coordinates.length; i++) {
+                Coordinate p = new Coordinate(points.get(i).getX(), points.get(i).getY());
+                Coordinate intersection = datelineIntersection(coordinates[i-1], p);
+
+                if(intersection != null) {
+                    if(lastIntersection == null) {
+                        lastIntersection = intersection;
+                    }
+                    coordinates[i] = intersection;
+                } else {
+                    coordinates[i] = p;
+                }
+
             }
 
             return GEOMETRY_FACTORY.createLinearRing(coordinates);
         }
+
 
         /**
          * Close the linestring by copying the first point if necessary
