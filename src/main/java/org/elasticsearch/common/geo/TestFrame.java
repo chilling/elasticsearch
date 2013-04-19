@@ -7,6 +7,7 @@ import java.awt.event.ComponentListener;
 import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -41,43 +42,6 @@ public class TestFrame extends JFrame implements ComponentListener {
         new TestFrame();
     }
     
-    class Intersection {
-        String string;
-        Coordinate coordinate;
-        public Intersection(String string, Coordinate coordinate) {
-            super();
-            this.string = string;
-            this.coordinate = coordinate;
-        }
-        
-    }
-    
-    private static Coordinate datelineIntersection(Coordinate p1, Coordinate p2, double dateline) {
-        if(p1.x == p2.x) {
-            return null;
-        } else {
-            final double t = (dateline - p1.x) / (p2.x - p1.x);
-
-            if(t > 1 || t <= 0) {
-                return null;
-            } else {
-                final double x = p1.x + t * (p2.x - p1.x); 
-                final double y = p1.y + t * (p2.y - p1.y);
-                return new Coordinate(x, y);
-            }
-        }
-    }
-    
-    private static int topIndex(Coordinate...coordinates) {
-        int result = 0;
-        for (int i = 1; i < coordinates.length; i++) {
-            if(coordinates[i].y < coordinates[result].y) {
-                result = i;
-            }
-        }
-        return result;
-    }
-
     private static final double intersection(Coordinate p1, Coordinate p2, double dateline) {
         if(p1.x == p2.x) {
             return Double.NaN;
@@ -92,7 +56,163 @@ public class TestFrame extends JFrame implements ComponentListener {
         }
     }
     
+    private static final class IntersectionOrder implements Comparator<Edge> {
+
+        private static final IntersectionOrder INSTANCE = new IntersectionOrder(); 
+        
+        @Override
+        public int compare(Edge o1, Edge o2) {
+            if(o1.intersection == null && o2.intersection == null) {
+              return 0;  
+            } else if(o1.intersection == null) {
+                return 1;
+            } else if(o2.intersection == null) {
+                return -1;
+            } else {
+                return Double.compare(o1.intersection.y, o2.intersection.y);
+            }
+        }
+        
+    }
+    
+    private static int intersectingEdges(String prefix, double dateline, Edge[] edges) {
+        int numIntersections = 0;
+        for(int i=0; i<edges.length; i++) {
+            Coordinate p0 = edges[(i+edges.length-1) % edges.length].coordinate;
+            Coordinate p1 = edges[i].coordinate;
+            Coordinate p2 = edges[i].next.coordinate;
+            
+            if(p1.x == dateline) {
+                System.out.println(prefix + "On Dateline: p" + edges[i].index);
+                if(Double.compare(p0.x, dateline) == Double.compare(p2.x, dateline)) {
+                }
+                continue;
+            }
+
+            double intersection = intersection(p1, p2, dateline);
+            if(!Double.isNaN(intersection)) {
+                
+                if(intersection == 1) {
+                    System.out.println(prefix + "Endpoint intersection " + edges[i]);
+                    if()
+                    if(Double.compare(p1.x, dateline) == Double.compare(edges[i].next.next.coordinate.x, dateline)) {
+                        // Ignore the ear
+                        System.out.println(prefix + "\tEar: e" + edges[i].index);
+                        continue;
+                    }
+                    if(p1.x == dateline) {
+                        System.out.println(prefix + "\tDateline: e" + edges[i].index);
+                        continue;
+                    }
+                }
+                edges[i].pointAt(intersection);
+                System.out.println(prefix + "Add intersection: " + edges[i]);
+                numIntersections++;
+            }
+        }
+        Arrays.sort(edges, IntersectionOrder.INSTANCE);
+        
+        System.out.println(prefix + "Intersections: " + Arrays.toString(edges));
+        
+        return numIntersections;
+    }
+    
+    private static Edge[] insertIntersections(Edge[] edges, int numIntersections) {
+        if(numIntersections < 1) {
+            return Arrays.copyOf(edges, 1);
+        } else {
+            int j = -1;
+            Edge[] candidates = new Edge[numIntersections];
+            for(int i=0; i<numIntersections; i++) {
+                Edge in = edges[i];
+                candidates[i] = in;
+
+                Edge out = edges[++i];
+                candidates[i] = out;
+
+                if(in.intersection != in.next.coordinate) {
+                    Edge e1 = new Edge(j--, in.intersection, in.next);
+                    
+                    if(out.intersection != out.next.coordinate) {
+                        Edge e2 = new Edge(j--, out.intersection, out.next);
+                        in.next = new Edge(j--, in.intersection, e2);
+                    } else {
+                        in.next = new Edge(j--, in.intersection, out.next);
+                    }
+                    out.next = new Edge(j--, out.intersection, e1);
+                } else {
+                    Edge e2 = new Edge(j--, out.intersection, in.next);
+
+                    if(out.intersection != out.next.coordinate) {
+                        Edge e1 = new Edge(j--, out.intersection, out.next);
+                        in.next = new Edge(j--, in.intersection, e1);
+                        
+                    } else {
+                        in.next = new Edge(j--, in.intersection, out.next);
+                    }
+                    out.next = e2;
+                }
+            }
+
+//            System.out.println(Arrays.toString(candidates));
+            return candidates;
+        }
+    }
+    
+    private static Coordinate[][] compose(String prefix, Edge[] candidates, double left, double right) {
+        int cid = 0;
+        ArrayList<Coordinate[]> polygons = new ArrayList<Coordinate[]>();
+        for (Edge component : candidates) {
+            if(component.component >= 0) {
+                continue;
+            } else {
+                double shift = component.coordinate.x > right ? right : (component.coordinate.x < left ? left : 0);
+                ArrayList<Coordinate> coordinates = new ArrayList<Coordinate>();
+                component.component = cid++;
+                System.out.print(prefix + "Component "+component.coordinate.x+":");
+                Edge current = component;
+                do {
+                    coordinates.add(shift(current.coordinate, shift));
+                    current.component = component.component;
+                    System.out.print(" p" + current.index);
+                    current = current.next;
+                } while(current != component);
+                
+                polygons.add(coordinates.toArray(new Coordinate[coordinates.size()]));
+                
+                System.out.println();
+            }
+        }
+
+        return polygons.toArray(new Coordinate[polygons.size()][]); 
+    }
+    
+    private static Coordinate[][] decompose(double left, double right, Coordinate...points) {
+        System.out.println("==== ==== ==== ==== ==== ==== ==== ==== ====");
+        Edge[] edges = Edge.edges(points);
+        Edge[] candidates = insertIntersections(edges, intersectingEdges("", right, edges));
+        Coordinate[][] components = compose("", candidates, 0, right);
+        System.out.println("---- ---- ---- ---- ---- ---- ---- ---- ----");
+
+        ArrayList<Coordinate[]> polygons = new ArrayList<>();
+        for(Coordinate[] component : components) {
+            Edge[] subedges = Edge.edges(component);
+            System.out.println("Polygon: " + Arrays.toString(subedges));
+            Edge[] subcandidates = insertIntersections(subedges, intersectingEdges("\t", left, subedges));
+            System.out.println("\tParts:" +Arrays.toString(subcandidates));
+            for(Coordinate[] subcomponent : compose("\t", subcandidates, left, 0)) {
+                polygons.add(subcomponent);
+            }
+        }
+        
+        return polygons.toArray(new Coordinate[polygons.size()][]);
+    }
+    
     public static Coordinate[][] split(double dateline, Coordinate...points) {
+        return decompose(-dateline, dateline, points);
+    }
+    
+    public static Coordinate[][] __split(double dateline, double s, Coordinate...points) {
         Edge[] edges = Edge.edges(points);
         TreeSet<Edge> intersections = new TreeSet<Edge>();
         
@@ -111,7 +231,6 @@ public class TestFrame extends JFrame implements ComponentListener {
         ArrayList<Edge> components = new ArrayList<>();
         
         int j = edges.length;
-        Coordinate[] full = new Coordinate[edges.length + 2*intersections.size()];
         while(!intersections.isEmpty()) {
             System.out.println("Intersections: " + intersections.size());
             Edge in = intersections.pollFirst();
@@ -122,36 +241,43 @@ public class TestFrame extends JFrame implements ComponentListener {
             out.next = new Edge(j++, out.intersection, e1);
             in.next = new Edge(j++, in.intersection, e2);
             
-            components.add(in.next);
-            components.add(out.next);
-            
-            System.out.println("Out: " + out);
-            
+            components.add(in);
+            components.add(out);
         }
-        
+
+        int cid = 0;
+        ArrayList<Coordinate[]> polygons = new ArrayList<Coordinate[]>();
         for (Edge component : components) {
-            System.out.print("Component: p" + component.index);
-            Edge current = component.next;
-            while(current != component) {
-                System.out.print(" p" + current.index);
-                current = current.next;
+            if(component.component >= 0) {
+                continue;
+            } else {
+                double shift = component.coordinate.x > dateline ? s : 0;
+                ArrayList<Coordinate> coordinates = new ArrayList<Coordinate>();
+                component.component = cid++;
+                System.out.print("Component "+component.coordinate.x+":");
+                Edge current = component;
+                do {
+                    coordinates.add(shift(current.coordinate, shift));
+                    current.component = component.component;
+                    System.out.print(" p" + current.index);
+                    current = current.next;
+                } while(current != component);
+                
+                polygons.add(coordinates.toArray(new Coordinate[coordinates.size()]));
+                
+                System.out.println();
             }
-            System.out.println();
         }
-        
-        Edge current = edges[0];
-        for (int i = 0; i < full.length; i++) {
-            full[i] = (current = current.next).coordinate;
-        }
-        
-        return new Coordinate[][] {full};
+
+        return polygons.toArray(new Coordinate[polygons.size()][]); 
     }
 
-    private static class Edge implements Comparable<Edge> {
+    private static class Edge {
         final Coordinate coordinate;
         final int index;
         Edge next;
         Coordinate intersection;
+        int component = -1;
         
         public Edge(int index, Coordinate coordinate, Edge next) {
             super();
@@ -171,125 +297,30 @@ public class TestFrame extends JFrame implements ComponentListener {
         }
 
         public Coordinate pointAt(double position) {
-            final double x = coordinate.x + position * (next.coordinate.x - coordinate.x);
-            final double y = coordinate.y + position * (next.coordinate.y - coordinate.y);
-            return intersection = new Coordinate(x, y);
-        }
-        
-        @Override
-        public int compareTo(Edge o) {
-            return Double.compare(intersection.y, o.intersection.y);
-        }
-
-    }
-    
-    public static Coordinate[][] _split(double dateline, Coordinate...points) {
-        final int top = topIndex(points);
-        final double shift = points[top].x;
-        
-        final double left = -dateline;
-        final double right = +dateline;
-        
-        ArrayList<List<Coordinate>> parts = new ArrayList<List<Coordinate>>();
-        List<Coordinate> current = new ArrayList<Coordinate>();
-        
-        parts.add(current);
-        current.add(points[top]);
-        
-        boolean negative = false;
-        boolean positive = false;
-        
-        for (int i = 1; i <= points.length; i++) {
-            Coordinate p = points[(top + i - 1) % points.length];
-            Coordinate c = points[(top + i + 0) % points.length];
-            
-            Coordinate s0 = datelineIntersection(p, c, right);
-            Coordinate s1 = datelineIntersection(p, c, left);
-            
-            if(s0 == null && s1 == null) {
-                if(negative) {
-                    current.add(shift(c, left));
-                } else if(positive) {
-                    current.add(shift(c, right));
-                } else {
-                    current.add(c);
-                }
-            } else if (s1 == null) {
-                if(!positive) {
-                    current.add(s0);
-                    current = new ArrayList<Coordinate>();
-                    current.add(shift(s0, right));
-                    current.add(shift(c, right));
-                    parts.add(current);
-                    positive = true;
-                } else {
-                    current.add(shift(s0, right));
-                    current = parts.remove(parts.size()-2);
-                    current.add(s0);
-                    current.add(c);
-                    parts.add(current);
-                    positive = false;
-                }
-            } else if (s0 == null) {
-                if(!negative) {
-                    current.add(s1);
-                    current = new ArrayList<Coordinate>();
-                    current.add(shift(s1, left));
-                    current.add(shift(c, left));
-                    parts.add(current);
-                    negative = true;
-                } else {
-                    current.add(shift(s1, left));
-                    current = parts.remove(parts.size()-2);
-                    current.add(s1);
-                    current.add(c);
-                    parts.add(current);
-                    negative = false;
-                }
+            if(position == 0) {
+                return intersection = coordinate;
+            } else if(position == 1) {
+                return intersection = next.coordinate;
             } else {
-                if(negative) {
-                    current.add(shift(s1, left));
-                    current = parts.remove(parts.size()-2);
-                    current.add(s1);
-                    current.add(s0);
-                    parts.add(current);
-                    current = new ArrayList<Coordinate>();
-                    current.add(shift(s0, right));
-                    current.add(shift(c, right));
-                    parts.add(current);
-                    negative = false;
-                    positive = true;
-                } else if(positive) {
-                    current.add(shift(s0, right));
-                    current = parts.remove(parts.size()-2);
-                    current.add(s0);
-                    current.add(s1);
-                    parts.add(current);
-                    current = new ArrayList<Coordinate>();
-                    current.add(shift(s1, left));
-                    current.add(shift(c, left));
-                    parts.add(current);
-                    negative = true;
-                    positive = false;
-                }
+                final double x = coordinate.x + position * (next.coordinate.x - coordinate.x);
+                final double y = coordinate.y + position * (next.coordinate.y - coordinate.y);
+                return intersection = new Coordinate(x, y);
             }
         }
         
-        
-        System.out.println("Parts: " + parts.size());
-        
-        Coordinate[][] result = new Coordinate[parts.size()][];
-        for (int i = 0; i < result.length; i++) {
-            result[i] = parts.get(i).toArray(new Coordinate[parts.get(i).size()]);
-            System.out.println("\t" + i + ": " + Arrays.toString(result[i]));
+        @Override
+        public String toString() {
+            return "e"+index + " " + intersection;
         }
         
-        
-        return result;
     }
     
     public static Coordinate shift(Coordinate coordinate, double dateline) {
-        return new Coordinate(-2*dateline + coordinate.x, coordinate.y);
+        if(dateline == 0) {
+            return coordinate;
+        } else {
+            return new Coordinate(-2*dateline + coordinate.x, coordinate.y);
+        }
     }
     
     public void drawPolygon(Graphics g, Coordinate...points) {
