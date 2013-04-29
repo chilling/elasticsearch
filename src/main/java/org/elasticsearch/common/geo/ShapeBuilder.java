@@ -211,7 +211,7 @@ public class ShapeBuilder {
                 xcontent.startArray();
             }
             for(EmbededPolygonBuilder<MultiPolygonBuilder> polygon : polygons) {
-                polygon.emdedXContent(null, xcontent);
+                polygon.embedXContent(null, xcontent);
             }
             xcontent.endArray();
         }
@@ -260,6 +260,15 @@ public class ShapeBuilder {
             return this;
         }
 
+        public Coordinate[][] coordinates() {
+            Coordinate[][] coordinates = new Coordinate[holes.size()+1][];
+            coordinates[0] = ring.coordinates();
+            for (int i = 0; i < holes.size(); i++) {
+                coordinates[i+1] = holes.get(i).coordinates();
+            }
+            return coordinates;
+        }
+        
         /**
          * Start creating a new hole within the polygon
          * @return a builder for holes
@@ -310,12 +319,12 @@ public class ShapeBuilder {
                 xcontent.startObject();
             }
             xcontent.field("type", "polygon");
-            emdedXContent("coordinates", xcontent);
+            embedXContent("coordinates", xcontent);
             xcontent.endObject();
             return xcontent;
         }
 
-        protected void emdedXContent(String name, XContentBuilder xcontent) throws IOException {
+        protected void embedXContent(String name, XContentBuilder xcontent) throws IOException {
             if(name != null) {
                 xcontent.startArray(name);
             } else {
@@ -327,7 +336,7 @@ public class ShapeBuilder {
             }
             xcontent.endArray();
         }
-
+        
     }
 
     /**
@@ -388,32 +397,21 @@ public class ShapeBuilder {
          * @return Built LinearRing
          */
         protected LinearRing toLinearRing() {
-            this.close();
             
-            ArrayList<Coordinate> currentRing = new ArrayList<Coordinate>(points.size());
-            
-            currentRing.add(new Coordinate(points.get(0).getX(), points.get(0).getY()));
-            
-            Coordinate lastIntersection = null;
-            
-            for (int i = 1; i < coordinates.length; i++) {
-                Coordinate p = new Coordinate(points.get(i).getX(), points.get(i).getY());
-                Coordinate intersection = datelineIntersection(coordinates[i-1], p);
-
-                if(intersection != null) {
-                    if(lastIntersection == null) {
-                        lastIntersection = intersection;
-                    }
-                    coordinates[i] = intersection;
-                } else {
-                    coordinates[i] = p;
-                }
-
-            }
-
-            return GEOMETRY_FACTORY.createLinearRing(coordinates);
+            return GEOMETRY_FACTORY.createLinearRing(coordinates());
         }
 
+        public Coordinate[] coordinates() {
+            this.close();
+            
+            Coordinate[] coordinates = new Coordinate[points.size()];
+            for (int i = 0; i < coordinates.length; i++) {
+                coordinates[i] = new Coordinate(points.get(i).getX(), points.get(i).getY());
+            }
+            
+            return coordinates;
+        }
+        
 
         /**
          * Close the linestring by copying the first point if necessary
