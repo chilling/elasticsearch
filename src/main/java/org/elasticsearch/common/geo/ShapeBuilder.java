@@ -19,14 +19,12 @@
 
 package org.elasticsearch.common.geo;
 
-import org.elasticsearch.ElasticSearchIllegalArgumentException;
-import org.elasticsearch.common.xcontent.XContentBuilder;
-
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Comparator;
 import java.util.List;
+
+import org.elasticsearch.ElasticSearchIllegalArgumentException;
+import org.elasticsearch.common.xcontent.XContentBuilder;
 
 import com.spatial4j.core.shape.Point;
 import com.spatial4j.core.shape.Rectangle;
@@ -213,7 +211,7 @@ public class ShapeBuilder {
                 xcontent.startArray();
             }
             for(EmbededPolygonBuilder<MultiPolygonBuilder> polygon : polygons) {
-                polygon.emdedXContent(null, xcontent);
+                polygon.embedXContent(null, xcontent);
             }
             xcontent.endArray();
         }
@@ -262,6 +260,15 @@ public class ShapeBuilder {
             return this;
         }
 
+        public Coordinate[][] coordinates() {
+            Coordinate[][] coordinates = new Coordinate[holes.size()+1][];
+            coordinates[0] = ring.coordinates();
+            for (int i = 0; i < holes.size(); i++) {
+                coordinates[i+1] = holes.get(i).coordinates();
+            }
+            return coordinates;
+        }
+        
         /**
          * Start creating a new hole within the polygon
          * @return a builder for holes
@@ -281,13 +288,6 @@ public class ShapeBuilder {
             return new JtsGeometry(toPolygon(), GeoShapeConstants.SPATIAL_CONTEXT, true);
         }
         
-        public Coordinate[][] asMultipolygon() {
-            final Coordinate[] polygon = coordinates();
-            final Coordinate[][] holes = inner();
-            
-            return decompose(-180, 180, polygon);
-        }
-
         protected Coordinate[][] inner() {
             final Coordinate[][] holes = new Coordinate[this.holes.size()][];
             for (int i = 0; i < holes.length; i++) {
@@ -296,10 +296,7 @@ public class ShapeBuilder {
             return holes;
         }
         
-        protected Coordinate[] coordinates() {
-            return ring.coordinates();
-        }
-        
+    
         /**
          * Creates the raw {@link Polygon}
          *
@@ -331,12 +328,12 @@ public class ShapeBuilder {
                 xcontent.startObject();
             }
             xcontent.field("type", "polygon");
-            emdedXContent("coordinates", xcontent);
+            embedXContent("coordinates", xcontent);
             xcontent.endObject();
             return xcontent;
         }
 
-        protected void emdedXContent(String name, XContentBuilder xcontent) throws IOException {
+        protected void embedXContent(String name, XContentBuilder xcontent) throws IOException {
             if(name != null) {
                 xcontent.startArray(name);
             } else {
@@ -349,187 +346,6 @@ public class ShapeBuilder {
             xcontent.endArray();
         }
 
-        private static final double intersection(Coordinate p1, Coordinate p2, double dateline) {
-            if(p1.x == p2.x) {
-                return Double.NaN;
-            } else {
-                final double t = (dateline - p1.x) / (p2.x - p1.x);
-
-                if(t > 1 || t <= 0) {
-                    return Double.NaN;
-                } else {
-                    return t;
-                }
-            }
-        }
-        
-        private static final class IntersectionOrder implements Comparator<Edge> {
-
-            private static final IntersectionOrder INSTANCE = new IntersectionOrder(); 
-            
-            @Override
-            public int compare(Edge o1, Edge o2) {
-                if(o1.intersection == null && o2.intersection == null) {
-                  return 0;  
-                } else if(o1.intersection == null) {
-                    return 1;
-                } else if(o2.intersection == null) {
-                    return -1;
-                } else {
-                    return Double.compare(o1.intersection.y, o2.intersection.y);
-                }
-            }
-            
-        }
-        
-        private static int intersectingEdges(double dateline, Edge[] edges) {
-            int numIntersections = 0;
-            for(int i=0; i<edges.length; i++) {
-                final Coordinate p1 = edges[i].coordinate;
-                final Coordinate p2 = edges[i].next.coordinate;
-
-                final double intersection = intersection(p1, p2, dateline);
-                if(!Double.isNaN(intersection)) {
-                    
-                    if(intersection == 1) {
-                        if(edges[i].next.next.coordinate.x == dateline) {
-                            // Ignore linesegment on dateline
-                            continue;
-                        } else if(Double.compare(p1.x, dateline) == Double.compare(edges[i].next.next.coordinate.x, dateline)) {
-                            // Ignore the ear
-                            continue;
-                        }
-                    }
-                    edges[i].setIntersection(intersection);
-                    numIntersections++;
-                }
-            }
-            Arrays.sort(edges, IntersectionOrder.INSTANCE);
-            return numIntersections;
-        }
-        
-        private static Edge[] insertIntersections(Edge[] edges, int numIntersections) {
-            if(numIntersections < 1) {
-                return Arrays.copyOf(edges, 1);
-            } else {
-                Edge[] candidates = new Edge[numIntersections];
-                for(int i=0; i<numIntersections; i++) {
-                    Edge in = edges[i];
-                    candidates[i] = in;
-
-                    Edge out = edges[++i];
-                    candidates[i] = out;
-
-                    if(in.intersection != in.next.coordinate) {
-                        Edge e1 = new Edge(in.intersection, in.next);
-                        
-                        if(out.intersection != out.next.coordinate) {
-                            Edge e2 = new Edge(out.intersection, out.next);
-                            in.next = new Edge(in.intersection, e2);
-                        } else {
-                            in.next = new Edge(in.intersection, out.next);
-                        }
-                        out.next = new Edge(out.intersection, e1);
-                    } else {
-                        Edge e2 = new Edge(out.intersection, in.next);
-
-                        if(out.intersection != out.next.coordinate) {
-                            Edge e1 = new Edge(out.intersection, out.next);
-                            in.next = new Edge(in.intersection, e1);
-                            
-                        } else {
-                            in.next = new Edge(in.intersection, out.next);
-                        }
-                        out.next = e2;
-                    }
-                }
-
-                return candidates;
-            }
-        }
-        
-        private static Coordinate[][] compose(Edge[] candidates, double left, double right) {
-            ArrayList<Coordinate[]> polygons = new ArrayList<Coordinate[]>();
-            for (Edge component : candidates) {
-                if(component.component != null) {
-                    continue;
-                } else {
-                    double shift = component.coordinate.x > right ? right : (component.coordinate.x < left ? left : 0);
-                    ArrayList<Coordinate> coordinates = new ArrayList<Coordinate>();
-                    component.component = component;
-                    Edge current = component;
-                    do {
-                        coordinates.add(shift(current.coordinate, shift));
-                        current.component = component;
-                        current = current.next;
-                    } while(current != component);
-                    
-                    polygons.add(coordinates.toArray(new Coordinate[coordinates.size()]));
-                }
-            }
-
-            return polygons.toArray(new Coordinate[polygons.size()][]); 
-        }
-        
-        private static Coordinate[][] decompose(double left, double right, Coordinate...points) {
-            Edge[] edges = Edge.edges(points);
-            Edge[] candidates = insertIntersections(edges, intersectingEdges(right, edges));
-            Coordinate[][] components = compose(candidates, 0, right);
-
-            ArrayList<Coordinate[]> polygons = new ArrayList<>();
-            for(Coordinate[] component : components) {
-                Edge[] subedges = Edge.edges(component);
-                Edge[] subcandidates = insertIntersections(subedges, intersectingEdges(left, subedges));
-                for(Coordinate[] subcomponent : compose(subcandidates, left, 0)) {
-                    polygons.add(subcomponent);
-                }
-            }
-            
-            return polygons.toArray(new Coordinate[polygons.size()][]);
-        }
-        
-        private static Coordinate shift(Coordinate coordinate, double dateline) {
-            if(dateline == 0) {
-                return coordinate;
-            } else {
-                return new Coordinate(-2*dateline + coordinate.x, coordinate.y);
-            }
-        }
-        
-        private static class Edge {
-            final Coordinate coordinate;
-            Edge next;
-            Coordinate intersection;
-            Edge component = null;
-            
-            public Edge(Coordinate coordinate, Edge next) {
-                super();
-                this.coordinate = coordinate;
-                this.next = next;
-            }
-            
-            public static Edge[] edges(Coordinate...points) {
-                Edge[] edges = new Edge[points.length];
-                edges[0] = new Edge(points[0], null);
-                for (int i = 1; i < points.length; i++) {
-                    edges[i-1].next = edges[i] = new Edge(points[i], null); 
-                }
-                edges[points.length - 1].next = edges[0];
-                return edges;
-            }
-
-            public Coordinate setIntersection(double position) {
-                if(position == 0) {
-                    return intersection = coordinate;
-                } else if(position == 1) {
-                    return intersection = next.coordinate;
-                } else {
-                    final double x = coordinate.x + position * (next.coordinate.x - coordinate.x);
-                    final double y = coordinate.y + position * (next.coordinate.y - coordinate.y);
-                    return intersection = new Coordinate(x, y);
-                }
-            }
-        }
     }
 
     /**
@@ -572,15 +388,19 @@ public class ShapeBuilder {
          * @return Built LinearRing
          */
         protected LinearRing toLinearRing() {
+
+            
             return GEOMETRY_FACTORY.createLinearRing(coordinates());
         }
 
-        protected Coordinate[] coordinates() {
+        public Coordinate[] coordinates() {
             this.close();
+            
             Coordinate[] coordinates = new Coordinate[points.size()];
             for (int i = 0; i < coordinates.length; i++) {
                 coordinates[i] = new Coordinate(points.get(i).getX(), points.get(i).getY());
             }
+            
             return coordinates;
         }
 
