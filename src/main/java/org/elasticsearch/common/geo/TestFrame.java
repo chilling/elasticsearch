@@ -95,25 +95,6 @@ public class TestFrame extends JFrame implements ComponentListener, MouseListene
         }
     }
     
-    private static final class IntersectionOrder implements Comparator<Edge> {
-
-        private static final IntersectionOrder INSTANCE = new IntersectionOrder(); 
-        
-        @Override
-        public int compare(Edge o1, Edge o2) {
-            if(o1.intersection == null && o2.intersection == null) {
-              return 0;  
-            } else if(o1.intersection == null) {
-                return 1;
-            } else if(o2.intersection == null) {
-                return -1;
-            } else {
-                return Double.compare(o1.intersection.y, o2.intersection.y);
-            }
-        }
-        
-    }
-    
     private static double distance(Coordinate point, Edge edge) {
         Coordinate p1 = edge.coordinate;
         Coordinate p2 = edge.next.coordinate;
@@ -168,7 +149,7 @@ public class TestFrame extends JFrame implements ComponentListener, MouseListene
                         System.out.println("taken");
                     }
                 }
-                edges[i].pointAt(intersection);
+                edges[i].intersection(intersection);
                 System.out.println(prefix + "Add intersection: " + edges[i]);
                 numIntersections++;
             }
@@ -182,7 +163,6 @@ public class TestFrame extends JFrame implements ComponentListener, MouseListene
         if(numIntersections < 1) {
             return Arrays.copyOf(edges, 1);
         } else {
-            int j = -1;
             Edge[] candidates = new Edge[numIntersections];
             for(int i=0; i<numIntersections; i+=2) {
                 Edge in = edges[i+0];
@@ -192,24 +172,24 @@ public class TestFrame extends JFrame implements ComponentListener, MouseListene
                 candidates[i+1] = out;
 
                 if(in.intersection != in.next.coordinate) {
-                    Edge e1 = new Edge(j--, in.intersection, in.next);
+                    Edge e1 = new Edge(in.intersection, in.next);
                     
                     if(out.intersection != out.next.coordinate) {
-                        Edge e2 = new Edge(j--, out.intersection, out.next);
-                        candidates[i+0] = in.next = new Edge(j--, in.intersection, e2, in.intersection);
+                        Edge e2 = new Edge(out.intersection, out.next);
+                        candidates[i+0] = in.next = new Edge(in.intersection, e2, in.intersection);
                     } else {
-                        candidates[i+0] = in.next = new Edge(j--, in.intersection, out.next, in.intersection);
+                        candidates[i+0] = in.next = new Edge(in.intersection, out.next, in.intersection);
                     }
-                    candidates[i+1] = out.next = new Edge(j--, out.intersection, e1, out.intersection);
+                    candidates[i+1] = out.next = new Edge(out.intersection, e1, out.intersection);
                 } else {
-                    Edge e2 = candidates[i+0] = new Edge(j--, out.intersection, in.next, out.intersection);
+                    Edge e2 = candidates[i+0] = new Edge(out.intersection, in.next, out.intersection);
 
                     if(out.intersection != out.next.coordinate) {
-                        Edge e1 = new Edge(j--, out.intersection, out.next);
-                        candidates[i+1] = in.next = new Edge(j--, in.intersection, e1, in.intersection);
+                        Edge e1 = new Edge(out.intersection, out.next);
+                        candidates[i+1] = in.next = new Edge(in.intersection, e1, in.intersection);
                         
                     } else {
-                        candidates[i+1] = in.next = new Edge(j--, in.intersection, out.next, in.intersection);
+                        candidates[i+1] = in.next = new Edge(in.intersection, out.next, in.intersection);
                     }
                     out.next = e2;
                 }
@@ -228,14 +208,12 @@ public class TestFrame extends JFrame implements ComponentListener, MouseListene
                 continue;
             } else {
 
-                
+                // Find a point on the connected component that is away from the dateline
                 while (component.coordinate.x == left || component.coordinate.x == right) {
                     component = component.next;
-                    System.out.println("=========== shiftx = "+component.coordinate.x+" ============== ("+left+ ":"+right+")");
                 }
                 
                 double shift = component.coordinate.x > right ? right : (component.coordinate.x < left ? left : 0);
-                System.out.println("=========== shift = "+shift+" ("+component.coordinate.x+")"+" ============== ("+left+ ":"+right+")");
                 
                 ArrayList<Coordinate> coordinates = new ArrayList<Coordinate>();
                 component.component = cid++;
@@ -259,10 +237,6 @@ public class TestFrame extends JFrame implements ComponentListener, MouseListene
         return polygons.toArray(new Coordinate[polygons.size()][]); 
     }
     
-    private static Edge split(Edge edge, Coordinate point) {
-        return edge.next = new Edge(-200, point, edge.next);
-    }
-    
     private static Edge[] merge(double dateline, Edge[] hole, Edge[] segments) {
         int holeIntersections = intersectingEdges("", dateline, hole);
         System.out.println("\t\tCMP:  "+Arrays.toString(segments));
@@ -283,8 +257,8 @@ public class TestFrame extends JFrame implements ComponentListener, MouseListene
                     System.arraycopy(segments, 0, newSegments, 0, l);
                     System.arraycopy(segments, l, newSegments, l+2, segments.length-l);
 
-                    Edge e1 = newSegments[l+0] = new Edge(-300, hole[j+0].intersection, segments[segment+1].next, hole[j+0].intersection);
-                    Edge e2 = newSegments[l+1] = new Edge(-300, hole[j+1].intersection, segments[segment+0].next, hole[j+1].intersection);
+                    Edge e1 = newSegments[l+0] = new Edge(hole[j+0].intersection, segments[segment+1].next, hole[j+0].intersection);
+                    Edge e2 = newSegments[l+1] = new Edge(hole[j+1].intersection, segments[segment+0].next, hole[j+1].intersection);
                     Edge e3 = split(hole[j+1], hole[j+1].intersection);
                     Edge e4 = split(hole[j+0], hole[j+0].intersection);
                     
@@ -345,79 +319,6 @@ public class TestFrame extends JFrame implements ComponentListener, MouseListene
     
     public static Coordinate[][] split(double dateline, Coordinate[][] points) {
         return decompose(-dateline, dateline, points);
-    }
-
-    private static final class Edge {
-        final Coordinate coordinate;
-        final int index;
-        Edge next;
-        Coordinate intersection;
-        int component = -1;
-        
-        public Edge(int index, Coordinate coordinate, Edge next, Coordinate intersection) {
-            this.coordinate = coordinate;
-            this.next = next;
-            this.index = index;
-            this.intersection = intersection;
-        }
-        
-        public Edge(int index, Coordinate coordinate, Edge next) {
-            this(index, coordinate, next, null);
-        }
-        
-        private static final int top(Coordinate...points) {
-            int top = 0;
-            for (int i = 1; i < points.length-1; i++) {
-                if(points[i].y < points[top].y) {
-                    top = i;
-                }
-            }
-            return top;
-        }
-        
-        private static Edge[] concat(boolean direction, Coordinate...points) {
-            Edge[] edges = new Edge[points.length-1];
-            edges[0] = new Edge(0, points[0], null);
-            for (int i = 1; i < edges.length; i++) {
-                if(direction) {
-                    edges[i] = new Edge(i, points[i], edges[i-1]); 
-                } else {
-                    edges[i-1].next = edges[i] = new Edge(i, points[i], null); 
-                }
-            }
-            
-            if(direction) {
-                edges[0].next = edges[edges.length - 1];
-            } else {
-                edges[edges.length - 1].next = edges[0];
-            }
-            return edges;
-        }
-        
-        public static Edge[] ring(boolean direction, Coordinate...points) {
-            final int top = top(points);
-            final int prev = (top + points.length - 1) % (points.length-1);
-            final int next = (top + 1) % (points.length-1);
-            return concat(direction ^ (points[prev].x > points[next].x), points);
-        }
-
-        public Coordinate pointAt(double position) {
-            if(position == 0) {
-                return intersection = coordinate;
-            } else if(position == 1) {
-                return intersection = next.coordinate;
-            } else {
-                final double x = coordinate.x + position * (next.coordinate.x - coordinate.x);
-                final double y = coordinate.y + position * (next.coordinate.y - coordinate.y);
-                return intersection = new Coordinate(x, y);
-            }
-        }
-        
-        @Override
-        public String toString() {
-            return "e"+index + (intersection==null?"":(" (" + intersection.y+")"));
-        }
-        
     }
     
     public static Coordinate shift(Coordinate coordinate, double dateline) {
