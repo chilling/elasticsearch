@@ -6,6 +6,9 @@ import java.awt.event.ComponentEvent;
 import java.awt.event.ComponentListener;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
+import java.awt.event.MouseMotionListener;
+import java.awt.event.MouseWheelEvent;
+import java.awt.event.MouseWheelListener;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
@@ -16,11 +19,12 @@ import org.elasticsearch.common.geo.ShapeBuilder.PolygonBuilder;
 
 import com.vividsolutions.jts.geom.Coordinate;
 
-public class TestFrame extends JFrame implements ComponentListener, MouseListener {
+public class TestFrame extends JFrame implements ComponentListener, MouseListener, MouseWheelListener, MouseMotionListener {
 
     private double scale = 1.2;
     private PolygonBuilder polygon;
     private double dateline = 180;
+    private double[] center = new double[2]; 
     
     public TestFrame() {
         super("polygon intersection");
@@ -28,6 +32,13 @@ public class TestFrame extends JFrame implements ComponentListener, MouseListene
         this.setSize(800, 600);
         this.setVisible(true);
         this.setDefaultCloseOperation(DISPOSE_ON_CLOSE);
+        
+        this.addMouseListener(this);
+        this.addMouseWheelListener(this);
+        this.addMouseMotionListener(this);
+
+        this.center[0] = getWidth() / 2;
+        this.center[1] = getHeight() / 2;
         
         polygon = ShapeBuilder.newPolygon()
                 .point(0, 0)
@@ -173,38 +184,38 @@ public class TestFrame extends JFrame implements ComponentListener, MouseListene
         } else {
             int j = -1;
             Edge[] candidates = new Edge[numIntersections];
-            for(int i=0; i<numIntersections; i++) {
-                Edge in = edges[i];
-                candidates[i] = in;
+            for(int i=0; i<numIntersections; i+=2) {
+                Edge in = edges[i+0];
+                Edge out = edges[i+1];
 
-                Edge out = edges[++i];
-                candidates[i] = out;
+                candidates[i+0] = in;
+                candidates[i+1] = out;
 
                 if(in.intersection != in.next.coordinate) {
                     Edge e1 = new Edge(j--, in.intersection, in.next);
                     
                     if(out.intersection != out.next.coordinate) {
                         Edge e2 = new Edge(j--, out.intersection, out.next);
-                        in.next = new Edge(j--, in.intersection, e2);
+                        candidates[i+0] = in.next = new Edge(j--, in.intersection, e2, in.intersection);
                     } else {
-                        in.next = new Edge(j--, in.intersection, out.next);
+                        candidates[i+0] = in.next = new Edge(j--, in.intersection, out.next, in.intersection);
                     }
-                    out.next = new Edge(j--, out.intersection, e1);
+                    candidates[i+1] = out.next = new Edge(j--, out.intersection, e1, out.intersection);
                 } else {
-                    Edge e2 = new Edge(j--, out.intersection, in.next);
+                    Edge e2 = candidates[i+0] = new Edge(j--, out.intersection, in.next, out.intersection);
 
                     if(out.intersection != out.next.coordinate) {
                         Edge e1 = new Edge(j--, out.intersection, out.next);
-                        in.next = new Edge(j--, in.intersection, e1);
+                        candidates[i+1] = in.next = new Edge(j--, in.intersection, e1, in.intersection);
                         
                     } else {
-                        in.next = new Edge(j--, in.intersection, out.next);
+                        candidates[i+1] = in.next = new Edge(j--, in.intersection, out.next, in.intersection);
                     }
                     out.next = e2;
                 }
             }
 
-//            System.out.println(Arrays.toString(candidates));
+            System.out.println("DATELINE: " + Arrays.toString(candidates));
             return candidates;
         }
     }
@@ -216,7 +227,16 @@ public class TestFrame extends JFrame implements ComponentListener, MouseListene
             if(component.component >= 0) {
                 continue;
             } else {
+
+                
+                while (component.coordinate.x == left || component.coordinate.x == right) {
+                    component = component.next;
+                    System.out.println("=========== shiftx = "+component.coordinate.x+" ============== ("+left+ ":"+right+")");
+                }
+                
                 double shift = component.coordinate.x > right ? right : (component.coordinate.x < left ? left : 0);
+                System.out.println("=========== shift = "+shift+" ("+component.coordinate.x+")"+" ============== ("+left+ ":"+right+")");
+                
                 ArrayList<Coordinate> coordinates = new ArrayList<Coordinate>();
                 component.component = cid++;
                 System.out.print(prefix + "sub-component "+component.coordinate.x+":");
@@ -227,7 +247,9 @@ public class TestFrame extends JFrame implements ComponentListener, MouseListene
                     System.out.print(" p" + current.index);
                     current = current.next;
                 } while(current != component);
-                
+
+                coordinates.add(shift(current.coordinate, shift));
+
                 polygons.add(coordinates.toArray(new Coordinate[coordinates.size()]));
                 
                 System.out.println();
@@ -241,62 +263,79 @@ public class TestFrame extends JFrame implements ComponentListener, MouseListene
         return edge.next = new Edge(-200, point, edge.next);
     }
     
-    private static void merge(double dateline, Edge[] hole, int numIntersections, Edge[] edges) {
+    private static Edge[] merge(double dateline, Edge[] hole, Edge[] segments) {
         int holeIntersections = intersectingEdges("", dateline, hole);
+        System.out.println("\t\tCMP:  "+Arrays.toString(segments));
         System.out.println("\t\tHole: "+Arrays.toString(hole));
 
         if(holeIntersections == 0) {
-            Edge component = closest(hole[0].coordinate, edges[0]);
-            System.out.println("\t\t\tComponent of " + component);
+//            Edge component = closest(hole[0].coordinate, edges[0]);
+//            System.out.println("\t\t\tComponent of " + component);
         } else {
-            for (int j = 0; j < holeIntersections; j++) {
-                int segment = Arrays.binarySearch(edges, 0, numIntersections, hole[j], IntersectionOrder.INSTANCE);
+            for (int j = 0; j < holeIntersections; j+=2) {
+                int segment = Arrays.binarySearch(segments, hole[j], IntersectionOrder.INSTANCE);
                 if (segment<0) {
-                    segment = -(segment+1);
-//                    Edge e1 = split(hole[j], hole[j].intersection);
-                    Edge e2 = split(edges[segment], edges[segment].intersection);
-
-                    j++;
-//                    Edge e3 = split(hole[j], hole[j].intersection);
-                    Edge e4 = split(edges[segment-1], edges[segment-1].intersection);
-
-//                    e3.next = e4;
-//                    edges[segment].next = e1;
+                    segment = 2+segment;
+                    System.out.println("\t\t\tFound: " + segments[segment].coordinate + " - " + segments[segment].next.coordinate +" at "  + segment);
                     
-                    System.out.println("\t\t\tSegment ("+hole[j].intersection+"): " + edges[segment] + " " + edges[segment].next);
+                    int l = segment | 1;
+                    Edge[] newSegments = new Edge[segments.length+2];
+                    System.arraycopy(segments, 0, newSegments, 0, l);
+                    System.arraycopy(segments, l, newSegments, l+2, segments.length-l);
+
+                    Edge e1 = newSegments[l+0] = new Edge(-300, hole[j+0].intersection, segments[segment+1].next, hole[j+0].intersection);
+                    Edge e2 = newSegments[l+1] = new Edge(-300, hole[j+1].intersection, segments[segment+0].next, hole[j+1].intersection);
+                    Edge e3 = split(hole[j+1], hole[j+1].intersection);
+                    Edge e4 = split(hole[j+0], hole[j+0].intersection);
                     
+                    hole[j+0].next = e1;
+                    hole[j+1].next = e2;
+                    
+                    segments[segment+0].next = e4; 
+                    segments[segment+1].next = e3; 
+
+                    segments = newSegments;
+                    
+                    System.out.println("\t\t\tSegment ("+segment+"): " + segments[segment]);
                 } else {
-                    System.out.println("\t\t\tDirect hit: " + edges[j]);
+                    System.out.println("\t\t\tDirect hit: " + segments[j]);
                 }
             }
-        } 
+        }
+        return segments;
     }
     
     private static Coordinate[][] decompose(double left, double right, Coordinate[]...rings) {
         System.out.println("==== ==== ==== ==== ==== ==== ==== ==== ====");
-        Edge[] edges = Edge.ring(rings[0]);
+        Edge[] edges = Edge.ring(true, rings[0]);
         
         int numIntersections = intersectingEdges("", right, edges);
+        Edge[] dateline = insertIntersections(edges, numIntersections);
         
         for (int i = 1; i < rings.length; i++) {
-            merge(right, Edge.ring(rings[i]), numIntersections, edges);
+            dateline = merge(right, Edge.ring(true, rings[i]), dateline);
         }
 
-//      Edge[] candidates = insertIntersections(edges, numIntersections);
-        Edge[] candidates = edges;
 
-
-        
-        Coordinate[][] components = compose("", candidates, 0, right);
+        Coordinate[][] components = compose("", dateline, 0, right);
         System.out.println("---- ---- ---- ---- ---- ---- ---- ---- ----");
 
+        
         ArrayList<Coordinate[]> polygons = new ArrayList<Coordinate[]>();
         for(Coordinate[] component : components) {
-            Edge[] subedges = Edge.ring(component);
+            Edge[] subedges = Edge.ring(true, component);
             System.out.println("Component: " + Arrays.toString(subedges));
-            Edge[] subcandidates = insertIntersections(subedges, intersectingEdges("\t", left, subedges));
+            int subnum = intersectingEdges("\t", left, subedges);
+            Edge[] subcandidates = insertIntersections(subedges, subnum);
+
+            if(subnum>1) {
+                for (int i = 1; i < rings.length; i++) {
+                    subcandidates = merge(left, Edge.ring(true, rings[i]), subcandidates);
+                }
+            }
+
             System.out.println("\tParts:" +Arrays.toString(subcandidates));
-            for(Coordinate[] subcomponent : compose("\t", subcandidates, left, 0)) {
+            for(Coordinate[] subcomponent : compose("\t", subcandidates, left, right)) {
                 polygons.add(subcomponent);
             }
         }
@@ -315,16 +354,20 @@ public class TestFrame extends JFrame implements ComponentListener, MouseListene
         Coordinate intersection;
         int component = -1;
         
-        public Edge(int index, Coordinate coordinate, Edge next) {
-            super();
+        public Edge(int index, Coordinate coordinate, Edge next, Coordinate intersection) {
             this.coordinate = coordinate;
             this.next = next;
             this.index = index;
+            this.intersection = intersection;
+        }
+        
+        public Edge(int index, Coordinate coordinate, Edge next) {
+            this(index, coordinate, next, null);
         }
         
         private static final int top(Coordinate...points) {
             int top = 0;
-            for (int i = 1; i < points.length; i++) {
+            for (int i = 1; i < points.length-1; i++) {
                 if(points[i].y < points[top].y) {
                     top = i;
                 }
@@ -332,10 +375,10 @@ public class TestFrame extends JFrame implements ComponentListener, MouseListene
             return top;
         }
         
-        private static Edge[] ring(boolean direction, Coordinate...points) {
-            Edge[] edges = new Edge[points.length];
+        private static Edge[] concat(boolean direction, Coordinate...points) {
+            Edge[] edges = new Edge[points.length-1];
             edges[0] = new Edge(0, points[0], null);
-            for (int i = 1; i < points.length; i++) {
+            for (int i = 1; i < edges.length; i++) {
                 if(direction) {
                     edges[i] = new Edge(i, points[i], edges[i-1]); 
                 } else {
@@ -344,18 +387,18 @@ public class TestFrame extends JFrame implements ComponentListener, MouseListene
             }
             
             if(direction) {
-                edges[0].next = edges[points.length - 1];
+                edges[0].next = edges[edges.length - 1];
             } else {
-                edges[points.length - 1].next = edges[0];
+                edges[edges.length - 1].next = edges[0];
             }
             return edges;
         }
         
-        public static Edge[] ring(Coordinate...points) {
+        public static Edge[] ring(boolean direction, Coordinate...points) {
             final int top = top(points);
-            final int prev = (top + points.length - 1) % points.length;
-            final int next = (top + 1) % points.length;
-            return ring(points[prev].x > points[next].x, points);
+            final int prev = (top + points.length - 1) % (points.length-1);
+            final int next = (top + 1) % (points.length-1);
+            return concat(direction ^ (points[prev].x > points[next].x), points);
         }
 
         public Coordinate pointAt(double position) {
@@ -385,11 +428,11 @@ public class TestFrame extends JFrame implements ComponentListener, MouseListene
         }
     }
     
-    public void drawPolygon(Graphics g, boolean info, Coordinate...points) {
-        drawPolygon(g, points, 0, points.length, info);
+    public void drawPolygon(Graphics g, boolean info, int shift, Coordinate...points) {
+        drawPolygon(g, points, 0, points.length, info, shift);
     }
     
-    public void drawPolygon(Graphics g, Coordinate[] points, int offset, int length, boolean info) {
+    public void drawPolygon(Graphics g, Coordinate[] points, int offset, int length, boolean info, int shift) {
         Color color = g.getColor();
         for (int i = 0; i < length; i++) {
             Coordinate p0 = points[(offset+((i+0) % length)) % points.length];
@@ -398,11 +441,19 @@ public class TestFrame extends JFrame implements ComponentListener, MouseListene
             int[] p = convert(p0);
             int[] q = convert(p1);
 
-            g.drawLine(p[0], p[1], q[0], q[1]);
-            g.fillOval(p[0]-4, p[1]-4, 8, 8);
+            g.drawLine(p[0]+shift, p[1]+shift, q[0]+shift, q[1]+shift);
+            g.fillOval(p[0]-4+shift, p[1]-4+shift, 8, 8);
             if(info) {
+                String text = "p"+(offset+i) + " = ("+p0.x+", "+p0.y+")";
+                
+                int w = g.getFontMetrics().stringWidth(text);
+                int h = g.getFontMetrics().getHeight();
+                
+//                g.setColor(Color.BLACK);
+//                g.fillRect(p[0]+4, p[1]+4-h, w, h);
+                
                 g.setColor(Color.WHITE);
-                g.drawString("p"+(offset+i) + " = ("+p0.x+", "+p0.y+")", p[0]+4, p[1]+4);
+                g.drawString(text, p[0]+4+shift, p[1]+2+shift);
                 g.setColor(color);
             }
         }        
@@ -431,17 +482,18 @@ public class TestFrame extends JFrame implements ComponentListener, MouseListene
         
         Coordinate[][] points = polygon.coordinates();
         g.setColor(Color.BLUE);
-        drawPolygon(g, points[0], 0, points[0].length, false);
+        drawPolygon(g, points[0], 0, points[0].length-1, !decompose, 0);
         g.setColor(Color.RED);
         for (int i = 1; i < points.length; i++) {
-            drawPolygon(g, points[i], 0, points[i].length, true);
+            drawPolygon(g, points[i], 0, points[i].length-1, !decompose, 1);
         }
         
-        
-        Coordinate[][] coord = split(dateline, points);
-        g.setColor(Color.GREEN);
-        for(Coordinate[] poly : coord) {
-            drawPolygon(g, true, poly);
+        if(decompose) {
+            Coordinate[][] coord = split(dateline, points);
+            g.setColor(Color.GREEN);
+            for (int i = 0; i < coord.length; i++) {
+                drawPolygon(g, coord[i], 0, coord[i].length-1, true, 1);
+            }
         }
         
     }
@@ -450,8 +502,8 @@ public class TestFrame extends JFrame implements ComponentListener, MouseListene
         int cx = getWidth()/2;
         int cy = getHeight()/2;
         return new int[] {
-                Math.round(Math.round(scale*(cx+coordinate.x))),
-                Math.round(Math.round(scale*(cy+coordinate.y))),
+                Math.round(Math.round(scale*(center[0]+coordinate.x))),
+                Math.round(Math.round(scale*(center[1]+coordinate.y))),
         };
     }
 
@@ -478,15 +530,25 @@ public class TestFrame extends JFrame implements ComponentListener, MouseListene
         this.repaint();
     }
 
+    private int[] pos = null; 
+    
     @Override
     public void mousePressed(MouseEvent e) {
-        // TODO Auto-generated method stub
-        
+        pos = new int[] {e.getX(), e.getY()};
     }
 
     @Override
     public void mouseReleased(MouseEvent e) {
-        // TODO Auto-generated method stub
+        if(pos != null) {
+            int dx = e.getX() - pos[0];
+            int dy = e.getY() - pos[1];
+            
+            this.center[0] += dx/scale;
+            this.center[1] += dy/scale;
+            pos = null;
+            
+            this.repaint();
+        }
         
     }
 
@@ -502,5 +564,20 @@ public class TestFrame extends JFrame implements ComponentListener, MouseListene
         
     }
     
+    @Override
+    public void mouseWheelMoved(MouseWheelEvent e) {
+        scale = scale + 0.01 * e.getPreciseWheelRotation();
+        this.repaint();
+    }
+    
+    @Override
+    public void mouseDragged(MouseEvent e) {
+        // TODO Auto-generated method stub
+        
+    }
+    
+    @Override
+    public void mouseMoved(MouseEvent e) {
+    }
     
 }
