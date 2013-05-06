@@ -15,6 +15,7 @@ import java.util.Comparator;
 
 import javax.swing.JFrame;
 
+import org.elasticsearch.common.geo.GeoPolygonBuilder.Edge;
 import org.elasticsearch.common.geo.ShapeBuilder.PolygonBuilder;
 
 import com.vividsolutions.jts.geom.Coordinate;
@@ -22,7 +23,7 @@ import com.vividsolutions.jts.geom.Coordinate;
 public class TestFrame extends JFrame implements ComponentListener, MouseListener, MouseWheelListener, MouseMotionListener {
 
     private double scale = 1.2;
-    private PolygonBuilder polygon;
+    private Coordinate[][] points;
     private double dateline = 180;
     private double[] center = new double[2]; 
     
@@ -40,24 +41,48 @@ public class TestFrame extends JFrame implements ComponentListener, MouseListene
         this.center[0] = getWidth() / 2;
         this.center[1] = getHeight() / 2;
         
-        polygon = ShapeBuilder.newPolygon()
-                .point(0, 0)
-                .point(-250, 250)
-                .point(250, 100)
-                .point(300, -50)
-                .point(-180, -100)
-                .point(230, 10)
-                .hole()
-                    .point(-200, 225)
-                    .point(-150, 215)
-                    .point(-200, 205)
-                .close()
-                .hole()
-                    .point(200, -50)
-                    .point(150, -30)
-                    .point(200, -20)
-                .close()
-                .close();
+//        GeoPolygonBuilder polygon = new GeoPolygonBuilder();
+//
+//        this.points = polygon
+//                .point(0, 0)
+//                .point(-250, 250)
+//                .point(250, 100)
+//                .point(300, -50)
+//                .point(-180, -100)
+//                .point(230, 10)
+//                .hole()
+//                    .point(-200, 225)
+//                    .point(-150, 215)
+//                    .point(-200, 205)
+//                .close()
+//                .hole()
+//                    .point(200, -50)
+//                    .point(150, -30)
+//                    .point(200, -20)
+//                .close()
+//                .close()
+//                .coordinates();
+        
+        int spikes = 3;
+        double innerRadius = 50;
+        double outerRadius = 170;
+        
+        GeoPolygonBuilder polygon = new GeoPolygonBuilder();
+        
+        for (int i = 0; i < spikes; i++) {
+            double alpha = 2*Math.PI * (1.0f*i) / (1.0f * spikes);
+            double beta = 2*Math.PI * (1.0f*(i+1)) / (1.0f * spikes);
+            
+            double x1 = outerRadius * Math.cos(alpha);
+            double y1 = outerRadius * Math.sin(alpha);
+            polygon.point(x1, y1);
+
+            double x2 = innerRadius * Math.cos(beta);
+            double y2 = innerRadius * Math.sin(beta);
+            polygon.point(x2, y2);
+        }
+        
+        points = polygon.close().coordinates();
     }
     
     public static void main(String[] args) {
@@ -78,22 +103,12 @@ public class TestFrame extends JFrame implements ComponentListener, MouseListene
 //        client.prepareIndex("geo", "polygons").setCreate(true).setSource(
 //                ).;
         
+        GeoPolygonBuilder.main(args);
+        
         new TestFrame();
     }
     
-    private static final double intersection(Coordinate p1, Coordinate p2, double dateline) {
-        if(p1.x == p2.x) {
-            return Double.NaN;
-        } else {
-            final double t = (dateline - p1.x) / (p2.x - p1.x);
 
-            if(t > 1 || t <= 0) {
-                return Double.NaN;
-            } else {
-                return t;
-            }
-        }
-    }
     
     private static double distance(Coordinate point, Edge edge) {
         Coordinate p1 = edge.coordinate;
@@ -126,209 +141,7 @@ public class TestFrame extends JFrame implements ComponentListener, MouseListene
         return closest;
     }
     
-    private static int intersectingEdges(String prefix, double dateline, Edge[] edges) {
-        int numIntersections = 0;
-        for(int i=0; i<edges.length; i++) {
-            Coordinate p1 = edges[i].coordinate;
-            Coordinate p2 = edges[i].next.coordinate;
-            
-            double intersection = intersection(p1, p2, dateline);
-            if(!Double.isNaN(intersection)) {
-                
-                if(intersection == 1) {
-                    System.out.print(prefix + "Endpoint intersection " + edges[i]+": ");
-                    if(Double.compare(p1.x, dateline) == Double.compare(edges[i].next.next.coordinate.x, dateline)) {
-                        // Ignore the ear
-                        System.out.println("Ear (ignored)");
-                        continue;
-                    }else if(p2.x == dateline) {
-                        // Ignore Linesegments on dateline 
-                        System.out.println("Dateline (ignored)");
-                        continue;
-                    } else {
-                        System.out.println("taken");
-                    }
-                }
-                edges[i].intersection(intersection);
-                System.out.println(prefix + "Add intersection: " + edges[i]);
-                numIntersections++;
-            }
-        }
-        Arrays.sort(edges, IntersectionOrder.INSTANCE);
-        
-        return numIntersections;
-    }
-    
-    private static Edge[] insertIntersections(Edge[] edges, int numIntersections) {
-        if(numIntersections < 1) {
-            return Arrays.copyOf(edges, 1);
-        } else {
-            Edge[] candidates = new Edge[numIntersections];
-            for(int i=0; i<numIntersections; i+=2) {
-                Edge in = edges[i+0];
-                Edge out = edges[i+1];
 
-                candidates[i+0] = in;
-                candidates[i+1] = out;
-
-                if(in.intersection != in.next.coordinate) {
-                    Edge e1 = new Edge(in.intersection, in.next);
-                    
-                    if(out.intersection != out.next.coordinate) {
-                        Edge e2 = new Edge(out.intersection, out.next);
-                        candidates[i+0] = in.next = new Edge(in.intersection, e2, in.intersection);
-                    } else {
-                        candidates[i+0] = in.next = new Edge(in.intersection, out.next, in.intersection);
-                    }
-                    candidates[i+1] = out.next = new Edge(out.intersection, e1, out.intersection);
-                } else {
-                    Edge e2 = candidates[i+0] = new Edge(out.intersection, in.next, out.intersection);
-
-                    if(out.intersection != out.next.coordinate) {
-                        Edge e1 = new Edge(out.intersection, out.next);
-                        candidates[i+1] = in.next = new Edge(in.intersection, e1, in.intersection);
-                        
-                    } else {
-                        candidates[i+1] = in.next = new Edge(in.intersection, out.next, in.intersection);
-                    }
-                    out.next = e2;
-                }
-            }
-
-            System.out.println("DATELINE: " + Arrays.toString(candidates));
-            return candidates;
-        }
-    }
-    
-    private static Coordinate[][] compose(String prefix, Edge[] candidates, double left, double right) {
-        int cid = 0;
-        ArrayList<Coordinate[]> polygons = new ArrayList<Coordinate[]>();
-        for (Edge component : candidates) {
-            if(component.component >= 0) {
-                continue;
-            } else {
-
-                // Find a point on the connected component that is away from the dateline
-                while (component.coordinate.x == left || component.coordinate.x == right) {
-                    component = component.next;
-                }
-                
-                double shift = component.coordinate.x > right ? right : (component.coordinate.x < left ? left : 0);
-                
-                ArrayList<Coordinate> coordinates = new ArrayList<Coordinate>();
-                component.component = cid++;
-                System.out.print(prefix + "sub-component "+component.coordinate.x+":");
-                Edge current = component;
-                do {
-                    coordinates.add(shift(current.coordinate, shift));
-                    current.component = component.component;
-                    System.out.print(" p" + current.index);
-                    current = current.next;
-                } while(current != component);
-
-                coordinates.add(shift(current.coordinate, shift));
-
-                polygons.add(coordinates.toArray(new Coordinate[coordinates.size()]));
-                
-                System.out.println();
-            }
-        }
-
-        return polygons.toArray(new Coordinate[polygons.size()][]); 
-    }
-    
-    private static Edge[] merge(double dateline, Edge[] hole, Edge[] segments) {
-        int holeIntersections = intersectingEdges("", dateline, hole);
-        System.out.println("\t\tCMP:  "+Arrays.toString(segments));
-        System.out.println("\t\tHole: "+Arrays.toString(hole));
-
-        if(holeIntersections == 0) {
-//            Edge component = closest(hole[0].coordinate, edges[0]);
-//            System.out.println("\t\t\tComponent of " + component);
-        } else {
-            for (int j = 0; j < holeIntersections; j+=2) {
-                int segment = Arrays.binarySearch(segments, hole[j], IntersectionOrder.INSTANCE);
-                if (segment<0) {
-                    segment = 2+segment;
-                    System.out.println("\t\t\tFound: " + segments[segment].coordinate + " - " + segments[segment].next.coordinate +" at "  + segment);
-                    
-                    int l = segment | 1;
-                    Edge[] newSegments = new Edge[segments.length+2];
-                    System.arraycopy(segments, 0, newSegments, 0, l);
-                    System.arraycopy(segments, l, newSegments, l+2, segments.length-l);
-
-                    Edge e1 = newSegments[l+0] = new Edge(hole[j+0].intersection, segments[segment+1].next, hole[j+0].intersection);
-                    Edge e2 = newSegments[l+1] = new Edge(hole[j+1].intersection, segments[segment+0].next, hole[j+1].intersection);
-                    Edge e3 = split(hole[j+1], hole[j+1].intersection);
-                    Edge e4 = split(hole[j+0], hole[j+0].intersection);
-                    
-                    hole[j+0].next = e1;
-                    hole[j+1].next = e2;
-                    
-                    segments[segment+0].next = e4; 
-                    segments[segment+1].next = e3; 
-
-                    segments = newSegments;
-                    
-                    System.out.println("\t\t\tSegment ("+segment+"): " + segments[segment]);
-                } else {
-                    System.out.println("\t\t\tDirect hit: " + segments[j]);
-                }
-            }
-        }
-        return segments;
-    }
-    
-    private static Coordinate[][] decompose(double left, double right, Coordinate[]...rings) {
-        System.out.println("==== ==== ==== ==== ==== ==== ==== ==== ====");
-        Edge[] edges = Edge.ring(true, rings[0]);
-        
-        int numIntersections = intersectingEdges("", right, edges);
-        Edge[] dateline = insertIntersections(edges, numIntersections);
-        
-        for (int i = 1; i < rings.length; i++) {
-            dateline = merge(right, Edge.ring(true, rings[i]), dateline);
-        }
-
-
-        Coordinate[][] components = compose("", dateline, 0, right);
-        System.out.println("---- ---- ---- ---- ---- ---- ---- ---- ----");
-
-        
-        ArrayList<Coordinate[]> polygons = new ArrayList<Coordinate[]>();
-        for(Coordinate[] component : components) {
-            Edge[] subedges = Edge.ring(true, component);
-            System.out.println("Component: " + Arrays.toString(subedges));
-            int subnum = intersectingEdges("\t", left, subedges);
-            Edge[] subcandidates = insertIntersections(subedges, subnum);
-
-            if(subnum>1) {
-                for (int i = 1; i < rings.length; i++) {
-                    subcandidates = merge(left, Edge.ring(true, rings[i]), subcandidates);
-                }
-            }
-
-            System.out.println("\tParts:" +Arrays.toString(subcandidates));
-            for(Coordinate[] subcomponent : compose("\t", subcandidates, left, right)) {
-                polygons.add(subcomponent);
-            }
-        }
-        
-        return polygons.toArray(new Coordinate[polygons.size()][]);
-    }
-    
-    public static Coordinate[][] split(double dateline, Coordinate[][] points) {
-        return decompose(-dateline, dateline, points);
-    }
-    
-    public static Coordinate shift(Coordinate coordinate, double dateline) {
-        if(dateline == 0) {
-            return coordinate;
-        } else {
-            return new Coordinate(-2*dateline + coordinate.x, coordinate.y);
-        }
-    }
-    
     public void drawPolygon(Graphics g, boolean info, int shift, Coordinate...points) {
         drawPolygon(g, points, 0, points.length, info, shift);
     }
@@ -362,7 +175,7 @@ public class TestFrame extends JFrame implements ComponentListener, MouseListene
     
     @Override
     public void paint(Graphics g) {
-        if(polygon == null) {
+        if(points == null) {
             repaint();
             return;
         }
@@ -381,21 +194,23 @@ public class TestFrame extends JFrame implements ComponentListener, MouseListene
         g.drawLine(ds2[0], ds2[1], de2[0], de2[1]);
         
         
-        Coordinate[][] points = polygon.coordinates();
+        if(points.length < 1)
+            return;
+        
         g.setColor(Color.BLUE);
-        drawPolygon(g, points[0], 0, points[0].length-1, !decompose, 0);
+        drawPolygon(g, points[0], 0, points[0].length, !decompose, 0);
         g.setColor(Color.RED);
         for (int i = 1; i < points.length; i++) {
-            drawPolygon(g, points[i], 0, points[i].length-1, !decompose, 1);
+            drawPolygon(g, points[i], 0, points[i].length, !decompose, 1);
         }
         
-        if(decompose) {
-            Coordinate[][] coord = split(dateline, points);
-            g.setColor(Color.GREEN);
-            for (int i = 0; i < coord.length; i++) {
-                drawPolygon(g, coord[i], 0, coord[i].length-1, true, 1);
-            }
-        }
+//        if(decompose) {
+//            Coordinate[][] coord = split(dateline, points);
+//            g.setColor(Color.GREEN);
+//            for (int i = 0; i < coord.length; i++) {
+//                drawPolygon(g, coord[i], 0, coord[i].length-1, true, 1);
+//            }
+//        }
         
     }
     

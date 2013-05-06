@@ -61,6 +61,14 @@ public class GeoPolygonFilterBuilder extends BaseFilterBuilder {
         points.add(GeoHashUtils.decode(geohash));
         return this;
     }
+    
+    public void close() {
+        GeoPoint p0 = points.get(0);
+        GeoPoint p1 = points.get(points.size()-1);
+        if(p0.getLat() != p1.getLat() || p0.getLon() != p1.getLon()) {
+            points.add(p0);
+        }
+    }
 
     /**
      * Sets the filter name for the filter that can be used when searching for matched_filters per hit.
