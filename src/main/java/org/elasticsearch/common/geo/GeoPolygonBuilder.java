@@ -29,30 +29,7 @@ public class GeoPolygonBuilder {
 
     private final GeoRingBuilder<GeoPolygonBuilder> polygon = new GeoRingBuilder<GeoPolygonBuilder>(this, 0);
     private final ArrayList<GeoRingBuilder<GeoPolygonBuilder>> holes = new ArrayList<GeoRingBuilder<GeoPolygonBuilder>>(); 
-    
-    public static void main(String[] args) {
-        GeoPolygonBuilder builder = new GeoPolygonBuilder();
-        builder.point(0, 0)
-        .point(-250, 250)
-        .point(250, 100)
-        .point(300, -50)
-        .point(-180, -100)
-        .point(230, 10)
-        .hole()
-            .point(-200, 225)
-            .point(-150, 215)
-            .point(-200, 205)
-        .close()
-        .hole()
-            .point(200, -50)
-            .point(150, -30)
-            .point(200, -20)
-        .close()
-        .close();
-        
-        builder.coordinates();
-    }
-    
+
     public GeoPolygonBuilder point(double lat, double lon) {
         polygon.point(lat, lon);
         return this;
@@ -99,16 +76,7 @@ public class GeoPolygonBuilder {
         numHoles = merge(edges, 0, intersections(+180, edges), holeComponents, numHoles);
         numHoles = merge(edges, 0, intersections(-180, edges), holeComponents, numHoles);
  
-        Coordinate[][][] components = components(edges, holeComponents, numHoles);
-        
-        for (int i = 0; i < components.length; i++) {
-            System.out.println("Component " + i + ":");
-            for (int j = 0; j < components[i].length; j++) {
-                System.out.println("\t" + Arrays.toString(components[i][j]));
-            }
-        }
-        
-        return components;
+        return compose(edges, holeComponents, numHoles);
     }
     
     private static int component(final Edge edge, final int id, final ArrayList<Edge> edges) {
@@ -150,16 +118,20 @@ public class GeoPolygonBuilder {
         return coordinates;
     }
     
-    private static Coordinate[][][] components(Edge[] edges, Edge[] holes, int numHoles) {
+    private static Coordinate[][] holes(Edge[] holes, int numHoles) {
         Coordinate[][] points = new Coordinate[numHoles][];
         
         for (int i = 0; i < numHoles; i++) {
             int length = component(holes[i], -(i+1), null);
             points[i] = coordinates(holes[i], new Coordinate[length]);
         }
-
+        
+        return points;
+    } 
+    
+    private static Edge[] edges(Edge[] edges, int numHoles, ArrayList<ArrayList<Coordinate[]>> components) {
         ArrayList<Edge> mainEdges = new ArrayList<Edge>(edges.length);
-        final ArrayList<ArrayList<Coordinate[]>> components = new ArrayList<ArrayList<Coordinate[]>>();
+
         for (int i = 0; i < edges.length; i++) {
             if(edges[i].component>=0) {
                 int length = component(edges[i], -(components.size()+numHoles+1), mainEdges);
@@ -168,34 +140,53 @@ public class GeoPolygonBuilder {
                 components.add(component);
             }
         }
-        
-        final Edge[] copy = mainEdges.toArray(new Edge[mainEdges.size()]);
 
+        return mainEdges.toArray(new Edge[mainEdges.size()]);
+    }
+    
+    private static Coordinate[][][] compose(Edge[] edges, Edge[] holes, int numHoles) {
+        final ArrayList<ArrayList<Coordinate[]>> components = new ArrayList<ArrayList<Coordinate[]>>();
         
+        assign(holes, holes(holes, numHoles), numHoles, edges(edges, numHoles, components), components);
+        
+        return buildCoordinates(components);
+    }
+    
+    // Assign Hole to related components
+    private static void assign(Edge[] holes, Coordinate[][] points, int numHoles, Edge[] edges, ArrayList<ArrayList<Coordinate[]>> components) {
         System.out.println("Holes ("+numHoles+"): " + Arrays.toString(holes));
         for (int i = 0; i < numHoles; i++) {
             final Edge current = holes[i];
-            final int intersections = intersections(current.next.coordinate.x, copy);
-            final int pos = Arrays.binarySearch(copy, 0, intersections, current, IntersectionOrder.INSTANCE);
+            final int intersections = intersections(current.next.coordinate.x, edges);
+            final int pos = Arrays.binarySearch(edges, 0, intersections, current, IntersectionOrder.INSTANCE);
             final int index = -(pos+2);
-            final int component = -copy[index].component - numHoles - 1;
+            final int component = -edges[index].component - numHoles - 1;
 
-            System.out.println("\tposition ("+index+") of edge "+current+": " + copy[index]);
+            System.out.println("\tposition ("+index+") of edge "+current+": " + edges[index]);
             System.out.println("\tComponent: " + component);
-            System.out.println("\tHole intersections ("+current.coordinate.x+"): " + Arrays.toString(copy));
+            System.out.println("\tHole intersections ("+current.coordinate.x+"): " + Arrays.toString(edges));
             System.out.println();
             
             components.get(component).add(points[i]);
         }
-  
+    }
+    
+    private static Coordinate[][][] buildCoordinates(ArrayList<ArrayList<Coordinate[]>> components) {
         Coordinate[][][] result = new Coordinate[components.size()][][];
         for (int i = 0; i < result.length; i++) {
             ArrayList<Coordinate[]> component = components.get(i);
             result[i] = component.toArray(new Coordinate[component.size()][]);
         }
         
+        for (int i = 0; i < result.length; i++) {
+            System.out.println("Component " + i + ":");
+            for (int j = 0; j < result[i].length; j++) {
+                System.out.println("\t" + Arrays.toString(result[i][j]));
+            }
+        }
+
         return result;
-    }
+    } 
     
     private static int merge(Edge[] intersections, int offset, int length, Edge[] holes, int numHoles) {
         // Intersections appear pairwise. On the first edge the inner of
@@ -352,11 +343,6 @@ public class GeoPolygonBuilder {
             }
         }
         
-        private int update() {
-            for(Edge current = this; (current = current.next) != this; current.component = component);
-            return component;
-        }
-        
         private Edge(Coordinate coordinate, Edge next) {
             this(coordinate, next, null);
         }
@@ -369,12 +355,6 @@ public class GeoPolygonBuilder {
                 }
             }
             return top;
-        }
-        
-        private Edge split(Coordinate point) {
-            next = new Edge(point, next);
-            next.component = component;
-            return next;
         }
         
         private static Edge[] concat(int component, boolean direction, Coordinate[] points, int offset, Edge[] edges, int toffset, int length) {
