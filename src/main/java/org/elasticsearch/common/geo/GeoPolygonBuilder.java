@@ -69,118 +69,188 @@ public class GeoPolygonBuilder {
         return this;
     }
     
-    public Coordinate[][] coordinates() {
+    public Coordinate[][] points() {
+        Coordinate[][] points = new Coordinate[1+holes.size()][];
+        points[0] = polygon.coordinates.toArray(new Coordinate[polygon.coordinates.size()]);
+        for (int i = 0; i < holes.size(); i++) {
+            GeoRingBuilder<?> hole = holes.get(i);
+            points[1+i] = hole.coordinates.toArray(new Coordinate[hole.coordinates.size()]);
+        }
+        return points;
+    }
+    
+    public Coordinate[][][] coordinates() {
         int numEdges = polygon.coordinates.size();
         for (int i = 0; i < holes.size(); i++) {
             numEdges += holes.get(i).coordinates.size();
         }
         
         Edge[] edges = new Edge[numEdges];
+        Edge[] holeComponents = new Edge[holes.size()];
+        
         int offset = polygon.toArray(true, edges, 0);
         for (int i = 0; i < holes.size(); i++) {
-            offset += holes.get(i).toArray(true, edges, offset);
+            int length = this.holes.get(i).toArray(false, edges, offset);
+            holeComponents[i] = edges[offset];
+            offset += length;
         }
-        System.out.println("Edges: " + Arrays.toString(edges));
-        
-        merge(edges, 0, intersections(+180, edges));
-//        merge(edges, 0, intersections(-180, edges));
+
+        int numHoles = holeComponents.length;
+        numHoles = merge(edges, 0, intersections(+180, edges), holeComponents, numHoles);
+        numHoles = merge(edges, 0, intersections(-180, edges), holeComponents, numHoles);
  
-        Coordinate[][] components = components(edges);
+        Coordinate[][][] components = components(edges, holeComponents, numHoles);
         
         for (int i = 0; i < components.length; i++) {
-            System.out.println("Component " + i + " " + Arrays.toString(components[i]));
+            System.out.println("Component " + i + ":");
+            for (int j = 0; j < components[i].length; j++) {
+                System.out.println("\t" + Arrays.toString(components[i][j]));
+            }
         }
         
         return components;
     }
     
-    private static Coordinate[][] components(Edge[] edges) {
-        ArrayList<Coordinate[]> components = new ArrayList<Coordinate[]>(); 
+    private static int component(final Edge edge, final int id, final ArrayList<Edge> edges) {
+        System.out.print("Search shift...");
+        Edge any = edge;
+        while(any.coordinate.x == +180 || any.coordinate.x == -180) {
+            if((any = any.next) == edge) {
+                break;   
+            }
+        }
+        
+        double shift = any.coordinate.x>180?180:(any.coordinate.x<-180?-180:0);
+        System.out.println("shift: " + shift);
+
+        Edge current = edge;
+        
+        int length = 0;
+        System.out.print("building Component C"+id+"... ");
+        do {
+            System.out.print(current.component + " ");
+
+            current.coordinate = shift(current.coordinate, shift); 
+            current.component = id;
+            if(edges != null) {
+                edges.add(current);
+            }
+            
+            length++;
+        } while((current = current.next) != edge);
+
+        System.out.println("done");
+        return length;
+    }
+    
+    private static Coordinate[] coordinates(Edge component, Coordinate[] coordinates) {
+        for (int i = 0; i < coordinates.length; i++) {
+            coordinates[i] = (component = component.next).coordinate;
+        }
+        return coordinates;
+    }
+    
+    private static Coordinate[][][] components(Edge[] edges, Edge[] holes, int numHoles) {
+        Coordinate[][] points = new Coordinate[numHoles][];
+        
+        for (int i = 0; i < numHoles; i++) {
+            int length = component(holes[i], -(i+1), null);
+            points[i] = coordinates(holes[i], new Coordinate[length]);
+        }
+
+        ArrayList<Edge> mainEdges = new ArrayList<Edge>(edges.length);
+        final ArrayList<ArrayList<Coordinate[]>> components = new ArrayList<ArrayList<Coordinate[]>>();
         for (int i = 0; i < edges.length; i++) {
             if(edges[i].component>=0) {
-
-                Edge any = edges[i];
-                while(any.coordinate.x == +180 || any.coordinate.x == -180)
-                    any = any.next;
-                
-//                double shift = any.coordinate.x>180?180:(any.coordinate.x<-180?-180:0);
-                double shift = 0;
-                System.out.println("shift: " + shift);
-                
-                
-                ArrayList<Coordinate> component = new ArrayList<Coordinate>();
-                Edge current = edges[i];
-                do {
-                    component.add(shift(current.coordinate, shift));
-                    current.component = -1;
-                } while((current = current.next) != edges[i]);
-                components.add(component.toArray(new Coordinate[component.size()]));
+                int length = component(edges[i], -(components.size()+numHoles+1), mainEdges);
+                ArrayList<Coordinate[]> component = new ArrayList<Coordinate[]>();
+                component.add(coordinates(edges[i], new Coordinate[length]));
+                components.add(component);
             }
         }
-        return components.toArray(new Coordinate[components.size()][]);
-    }
-    
-    private static void merge(Edge[] intersections, int offset, int length) {
-        System.out.println("merging edges: " + Arrays.toString(intersections));
-        for (int i = 0; i < length; i+=2) {
-            Edge e1 = intersections[offset + i + 0]; 
-            Edge e2 = intersections[offset + i + 1];
+        
+        final Edge[] copy = mainEdges.toArray(new Edge[mainEdges.size()]);
+
+        
+        System.out.println("Holes ("+numHoles+"): " + Arrays.toString(holes));
+        for (int i = 0; i < numHoles; i++) {
+            final Edge current = holes[i];
+            final int intersections = intersections(current.next.coordinate.x, copy);
+            final int pos = Arrays.binarySearch(copy, 0, intersections, current, IntersectionOrder.INSTANCE);
+            final int index = -(pos+2);
+            final int component = -copy[index].component - numHoles - 1;
+
+            System.out.println("\tposition ("+index+") of edge "+current+": " + copy[index]);
+            System.out.println("\tComponent: " + component);
+            System.out.println("\tHole intersections ("+current.coordinate.x+"): " + Arrays.toString(copy));
+            System.out.println();
             
-            if(e1.component == 0 && e2.component == 0) {
-                connect(e1, e2);
-            } else {
-                Edge e3 = intersections[offset + i + 2]; 
-                Edge e4 = intersections[offset + i + 3];
-                cut(e1, e2, e3, e4);
-                i+=2;
-            }
+            components.get(component).add(points[i]);
         }
-        System.out.println("merged edges: " + Arrays.toString(intersections));
+  
+        Coordinate[][][] result = new Coordinate[components.size()][][];
+        for (int i = 0; i < result.length; i++) {
+            ArrayList<Coordinate[]> component = components.get(i);
+            result[i] = component.toArray(new Coordinate[component.size()][]);
+        }
+        
+        return result;
     }
     
-    private static void cut(Edge in1, Edge out1, Edge in2, Edge out2) {
-        System.out.println("\tCUT " + in1 + " " + out1 + " " + in2 + " " + out2);
+    private static int merge(Edge[] intersections, int offset, int length, Edge[] holes, int numHoles) {
+        // Intersections appear pairwise. On the first edge the inner of
+        // of the polygon is entered. On the second edge the outer face
+        // is entered. Other kinds of intersections are discard by the
+        // intersection function
         
-        Edge e3 = in1.split(in1.intersection);
-        Edge e4 = out1.split(out1.intersection);
-        
-        Edge e2 = new Edge(out1.intersection, e3, in1.intersection);
-        Edge e1 = new Edge(in1.intersection, e4, out1.intersection);
-        
-        Edge e8 = in2.split(in2.intersection);
-        Edge e7 = out2.split(out2.intersection);
-        
-        Edge e5 = new Edge(in2.intersection, e7, out2.intersection);
-        Edge e6 = new Edge(out2.intersection, e8, in2.intersection);
-        
-        out1.next = e2;
-        in1.next = e1;
-        out2.next = e6;
-        in2.next = e5;
+        for (int i = 0; i < length; i+=2) {
+            Edge e1 = intersections[offset + i + 0];
+            Edge e2 = intersections[offset + i + 1];
 
+            // If two segments are connected maybe a hole must be deleted
+            // Since Edges of components appear pairwise we need to check
+            // the second edge only (the first edge is either polygon or
+            // already handled)
+            if(e2.component>0) {
+                numHoles--;
+                holes[e2.component-1] = holes[numHoles];
+                holes[numHoles] = null;
+            }
+
+            connect(e1, e2);
+        }
+        
+        return numHoles;
     }
     
     private static void connect(Edge in, Edge out) {
-        System.out.println("\tCONNECT " + in + " " + out);
-
+        // Connecting two Edges by inserting the point at
+        // dateline intersection and connect these by adding
+        // two edges between this points. One per direction
         if(in.intersection != in.next.coordinate) {
+            // first edge has no point on dateline
             Edge e1 = new Edge(in.intersection, in.next);
             
             if(out.intersection != out.next.coordinate) {
+                // second edge has no point on dateline
                 Edge e2 = new Edge(out.intersection, out.next);
                 in.next = new Edge(in.intersection, e2, in.intersection);
             } else {
+                // second edge intersects with dateline
                 in.next = new Edge(in.intersection, out.next, in.intersection);
             }
             out.next = new Edge(out.intersection, e1, out.intersection);
         } else {
+            // first edge intersects with dateline
             Edge e2 = new Edge(out.intersection, in.next, out.intersection);
 
             if(out.intersection != out.next.coordinate) {
+                // second edge has no point on dateline
                 Edge e1 = new Edge(out.intersection, out.next);
                 in.next = new Edge(in.intersection, e1, in.intersection);
                 
             } else {
+                // second edge intersects with dateline
                 in.next = new Edge(in.intersection, out.next, in.intersection);
             }
             out.next = e2;
@@ -209,8 +279,6 @@ public class GeoPolygonBuilder {
 
             edges[i].intersection = null;
 
-            System.out.println(p1 + "\t" + p2);
-            
             double intersection = intersection(p1, p2, dateline);
             if(!Double.isNaN(intersection)) {
                 
@@ -267,14 +335,14 @@ public class GeoPolygonBuilder {
     }
 
     protected static final class Edge {
-        final Coordinate coordinate; // coordinate of the start point
+        Coordinate coordinate;       // coordinate of the start point
         Edge next;                   // next segment
         Coordinate intersection;     // potential intersection with dateline
         int component = -1;          // id of the component this edge belongs to 
         
         private Edge(Coordinate coordinate, Edge next, Coordinate intersection) {
-            if(coordinate == null)
-                throw new NullPointerException();
+//            if(coordinate == null)
+//                throw new NullPointerException();
             
             this.coordinate = coordinate;
             this.next = next;
@@ -284,14 +352,19 @@ public class GeoPolygonBuilder {
             }
         }
         
+        private int update() {
+            for(Edge current = this; (current = current.next) != this; current.component = component);
+            return component;
+        }
+        
         private Edge(Coordinate coordinate, Edge next) {
             this(coordinate, next, null);
         }
         
-        private static final int top(Coordinate...points) {
+        private static final int top(Coordinate[] points, int offset, int length) {
             int top = 0;
-            for (int i = 1; i < points.length-1; i++) {
-                if(points[i].y < points[top].y) {
+            for (int i = 1; i < length; i++) {
+                if(points[offset + i].y < points[offset + top].y) {
                     top = i;
                 }
             }
@@ -317,12 +390,15 @@ public class GeoPolygonBuilder {
             }
             
             if(direction) {
-                edges[toffset].next = edges[length - 1];
+                edges[toffset].next = edges[toffset + length - 1];
                 edges[toffset].component = component;
             } else {
                 edges[toffset + length - 1].next = edges[toffset];
                 edges[toffset + length - 1].component = component;
             }
+            
+            System.out.println("Ring("+direction+"): " + edges[toffset] + " " + edges[toffset].next);
+            
             return edges;
         }
         
@@ -339,10 +415,10 @@ public class GeoPolygonBuilder {
         }
         
         protected static Edge[] ring(int component, boolean direction, Coordinate[] points, int offset, Edge[] edges, int toffset, int length) {
-            final int top = top(points);
-            final int prev = (top + points.length - 1) % (points.length-1);
-            final int next = (top + 1) % (points.length-1);
-            return concat(component, direction ^ (points[prev].x > points[next].x), points, offset, edges, toffset, length);
+            final int top = top(points, offset, length);
+            final int prev = (offset + ((top + length - 1) % length));
+            final int next = (offset + ((top + 1) % length));
+            return concat(component, direction ^ (points[offset + prev].x > points[offset + next].x), points, offset, edges, toffset, length);
         }
 
         /**

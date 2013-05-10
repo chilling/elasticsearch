@@ -9,21 +9,17 @@ import java.awt.event.MouseListener;
 import java.awt.event.MouseMotionListener;
 import java.awt.event.MouseWheelEvent;
 import java.awt.event.MouseWheelListener;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Comparator;
 
 import javax.swing.JFrame;
-
-import org.elasticsearch.common.geo.GeoPolygonBuilder.Edge;
-import org.elasticsearch.common.geo.ShapeBuilder.PolygonBuilder;
 
 import com.vividsolutions.jts.geom.Coordinate;
 
 public class TestFrame extends JFrame implements ComponentListener, MouseListener, MouseWheelListener, MouseMotionListener {
 
+    private int currentPolygon = 0;
+    
     private double scale = 1.2;
-    private Coordinate[][] points;
+    private final GeoPolygonBuilder polygons[];
     private double dateline = 180;
     private double[] center = new double[2]; 
     
@@ -41,48 +37,80 @@ public class TestFrame extends JFrame implements ComponentListener, MouseListene
         this.center[0] = getWidth() / 2;
         this.center[1] = getHeight() / 2;
         
-//        GeoPolygonBuilder polygon = new GeoPolygonBuilder();
-//
-//        this.points = polygon
-//                .point(0, 0)
-//                .point(-250, 250)
-//                .point(250, 100)
-//                .point(300, -50)
-//                .point(-180, -100)
-//                .point(230, 10)
-//                .hole()
-//                    .point(-200, 225)
-//                    .point(-150, 215)
-//                    .point(-200, 205)
-//                .close()
-//                .hole()
-//                    .point(200, -50)
-//                    .point(150, -30)
-//                    .point(200, -20)
-//                .close()
-//                .close()
-//                .coordinates();
+        polygons = new GeoPolygonBuilder[3];
         
-        int spikes = 3;
-        double innerRadius = 50;
-        double outerRadius = 170;
-        
-        GeoPolygonBuilder polygon = new GeoPolygonBuilder();
-        
-        for (int i = 0; i < spikes; i++) {
-            double alpha = 2*Math.PI * (1.0f*i) / (1.0f * spikes);
-            double beta = 2*Math.PI * (1.0f*(i+1)) / (1.0f * spikes);
-            
-            double x1 = outerRadius * Math.cos(alpha);
-            double y1 = outerRadius * Math.sin(alpha);
-            polygon.point(x1, y1);
+        polygons[0] = new GeoPolygonBuilder()
+                .point(0, -200)
+                .point(250, -200)
+                .point(250, 200)
+                .point(0, 200)
+                    .hole()
+                        .point(100, -150)
+                        .point(200, -150)
+                        .point(200, -100)
+                        .point(100, -100)
+                    .close()
+                    .hole()
+                        .point(100, +100)
+                        .point(200, +100)
+                        .point(200, +150)
+                        .point(100, +150)
+                    .close()
+                    .hole()
+                        .point(100, -50)
+                        .point(200, -50)
+                        .point(200, +50)
+                        .point(100, +50)
+                    .close()
+                    .hole()
+                        .point(10, 10)
+                        .point(20, 10)
+                        .point(20, 20)
+                        .point(10, 20)
+                    .close()
+                    .hole()
+                        .point(210, 10)
+                        .point(220, 10)
+                        .point(220, 20)
+                        .point(210, 20)
+                    .close()
+                    .hole()
+                        .point(150, 160)
+                        .point(160, 160)
+                        .point(160, 170)
+                        .point(150, 170)
+                    .close()
+                .close();
 
-            double x2 = innerRadius * Math.cos(beta);
-            double y2 = innerRadius * Math.sin(beta);
-            polygon.point(x2, y2);
-        }
-        
-        points = polygon.close().coordinates();
+        polygons[1] = new GeoPolygonBuilder()
+          .point(0, 0)
+          .point(-250, 250)
+          .point(250, 100)
+          .point(300, -50)
+          .point(-180, -100)
+          .point(230, 10)
+              .hole()
+                  .point(-200, 225)
+                  .point(-150, 215)
+                  .point(-200, 205)
+              .close()
+              .hole()
+                  .point(200, -50)
+                  .point(150, -30)
+                  .point(200, -20)
+              .close()
+          .close();
+
+        polygons[2] = new GeoPolygonBuilder()
+                .point(0, -100)
+                .point(250, -100)
+                .point(250, 200)
+                .point(0, 200)
+                .point(0, 150)
+                .point(190, 150)
+                .point(190, -50)
+                .point(0, -50)
+            .close();
     }
     
     public static void main(String[] args) {
@@ -103,44 +131,10 @@ public class TestFrame extends JFrame implements ComponentListener, MouseListene
 //        client.prepareIndex("geo", "polygons").setCreate(true).setSource(
 //                ).;
         
-        GeoPolygonBuilder.main(args);
+//        GeoPolygonBuilder.main(args);
         
         new TestFrame();
     }
-    
-
-    
-    private static double distance(Coordinate point, Edge edge) {
-        Coordinate p1 = edge.coordinate;
-        Coordinate p2 = edge.next.coordinate;
-        
-        final double dx = p2.x - p1.x; 
-        final double dy = p2.y - p1.y;
-        final double s = dx*dx + dy*dy;
-        final double t = ((point.x - p1.x) * dx + (point.y * p1.y) * dy) / s;
-        final double u = Math.max(Math.min(t, 1), 0);
-        final double x = (p1.x + u * dx) - point.x; 
-        final double y = (p1.y + u * dy) - point.y; 
-        
-        return x*x + y*y;
-    }
-    
-    private static Edge closest(Coordinate point, Edge component) {
-        Edge closest = component;
-        double distance = distance(point, closest);
-        
-        Edge current = component;
-        while((current = current.next) != component) {
-            double dist = distance(point, current);
-            if(dist < distance) {
-                closest = current;
-                distance = dist;
-            }
-        }
-
-        return closest;
-    }
-    
 
     public void drawPolygon(Graphics g, boolean info, int shift, Coordinate...points) {
         drawPolygon(g, points, 0, points.length, info, shift);
@@ -160,8 +154,8 @@ public class TestFrame extends JFrame implements ComponentListener, MouseListene
             if(info) {
                 String text = "p"+(offset+i) + " = ("+p0.x+", "+p0.y+")";
                 
-                int w = g.getFontMetrics().stringWidth(text);
-                int h = g.getFontMetrics().getHeight();
+//                int w = g.getFontMetrics().stringWidth(text);
+//                int h = g.getFontMetrics().getHeight();
                 
 //                g.setColor(Color.BLACK);
 //                g.fillRect(p[0]+4, p[1]+4-h, w, h);
@@ -175,33 +169,45 @@ public class TestFrame extends JFrame implements ComponentListener, MouseListene
     
     @Override
     public void paint(Graphics g) {
-        if(points == null) {
+        if(polygons == null) {
             repaint();
             return;
         }
+        
         
         g.setFont(g.getFont().deriveFont(10f));
         
         g.setColor(Color.BLACK);
         g.fillRect(0, 0, getWidth(), getHeight());
-        g.setColor(Color.RED);
+        g.setColor(Color.LIGHT_GRAY);
         int[] ds1 = convert(new Coordinate(dateline, -getHeight()/2));
         int[] de1 = convert(new Coordinate(dateline, +getHeight()/2));
-        g.drawLine(ds1[0], ds1[1], de1[0], de1[1]);
+        g.drawLine(ds1[0], 0, de1[0], getHeight());
         
         int[] ds2 = convert(new Coordinate(-dateline, -getHeight()/2));
         int[] de2 = convert(new Coordinate(-dateline, +getHeight()/2));
-        g.drawLine(ds2[0], ds2[1], de2[0], de2[1]);
+        g.drawLine(ds2[0], 0, de2[0], getHeight());
         
         
-        if(points.length < 1)
-            return;
-        
-        g.setColor(Color.BLUE);
-        drawPolygon(g, points[0], 0, points[0].length, !decompose, 0);
-        g.setColor(Color.RED);
-        for (int i = 1; i < points.length; i++) {
-            drawPolygon(g, points[i], 0, points[i].length, !decompose, 1);
+        if(!decompose) {
+            Coordinate[][] points = polygons[currentPolygon].points();
+
+            g.setColor(Color.BLUE);
+            drawPolygon(g, points[0], 0, points[0].length, decompose, 0);
+            g.setColor(Color.RED);
+            for (int i = 1; i < points.length; i++) {
+                drawPolygon(g, points[i], 0, points[i].length, decompose, 1);
+            }
+        } else {
+            Coordinate[][][] components = polygons[currentPolygon].coordinates();
+            for (Coordinate[][] points : components) {
+                g.setColor(Color.BLUE);
+                drawPolygon(g, points[0], 0, points[0].length, decompose, 0);
+                g.setColor(Color.RED);
+                for (int i = 1; i < points.length; i++) {
+                    drawPolygon(g, points[i], 0, points[i].length, decompose, 1);
+                }
+            }
         }
         
 //        if(decompose) {
@@ -215,8 +221,6 @@ public class TestFrame extends JFrame implements ComponentListener, MouseListene
     }
     
     private int[] convert(Coordinate coordinate) {
-        int cx = getWidth()/2;
-        int cy = getHeight()/2;
         return new int[] {
                 Math.round(Math.round(scale*(center[0]+coordinate.x))),
                 Math.round(Math.round(scale*(center[1]+coordinate.y))),
@@ -242,7 +246,11 @@ public class TestFrame extends JFrame implements ComponentListener, MouseListene
     
     @Override
     public void mouseClicked(MouseEvent e) {
-        decompose = !decompose;
+        if(e.getButton() == MouseEvent.BUTTON1) {
+            decompose = !decompose;
+        } else if(e.getButton() == MouseEvent.BUTTON3) {
+            currentPolygon = (currentPolygon+1) % polygons.length;
+        }
         this.repaint();
     }
 
@@ -250,7 +258,7 @@ public class TestFrame extends JFrame implements ComponentListener, MouseListene
     
     @Override
     public void mousePressed(MouseEvent e) {
-        pos = new int[] {e.getX(), e.getY()};
+            pos = new int[] {e.getX(), e.getY()};
     }
 
     @Override
