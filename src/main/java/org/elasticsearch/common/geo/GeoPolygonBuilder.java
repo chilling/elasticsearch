@@ -27,6 +27,7 @@ import com.vividsolutions.jts.geom.Coordinate;
 
 public class GeoPolygonBuilder {
 
+    private static final double DATELINE = 180d;
     private final GeoRingBuilder<GeoPolygonBuilder> polygon = new GeoRingBuilder<GeoPolygonBuilder>(this, 0);
     private final ArrayList<GeoRingBuilder<GeoPolygonBuilder>> holes = new ArrayList<GeoRingBuilder<GeoPolygonBuilder>>(); 
 
@@ -73,27 +74,30 @@ public class GeoPolygonBuilder {
         }
 
         int numHoles = holeComponents.length;
-        numHoles = merge(edges, 0, intersections(+180, edges), holeComponents, numHoles);
-        numHoles = merge(edges, 0, intersections(-180, edges), holeComponents, numHoles);
+        numHoles = merge(edges, 0, intersections(+DATELINE, edges), holeComponents, numHoles);
+        numHoles = merge(edges, 0, intersections(-DATELINE, edges), holeComponents, numHoles);
  
         return compose(edges, holeComponents, numHoles);
     }
     
     private static int component(final Edge edge, final int id, final ArrayList<Edge> edges) {
         System.out.print("Search shift...");
+        // find a coordinate that is not part of the dateline 
         Edge any = edge;
-        while(any.coordinate.x == +180 || any.coordinate.x == -180) {
+        while(any.coordinate.x == +DATELINE || any.coordinate.x == -DATELINE) {
             if((any = any.next) == edge) {
                 break;   
             }
         }
         
-        double shift = any.coordinate.x>180?180:(any.coordinate.x<-180?-180:0);
+        double shift = any.coordinate.x>DATELINE?DATELINE:(any.coordinate.x<-DATELINE?-DATELINE:0);
         System.out.println("shift: " + shift);
 
-        Edge current = edge;
-        
+        // run along the border of the component, collect the
+        // edges, shift them according to the dateline and
+        // update the component id
         int length = 0;
+        Edge current = edge;
         System.out.print("building Component C"+id+"... ");
         do {
             System.out.print(current.component + " ");
@@ -146,18 +150,20 @@ public class GeoPolygonBuilder {
     
     private static Coordinate[][][] compose(Edge[] edges, Edge[] holes, int numHoles) {
         final ArrayList<ArrayList<Coordinate[]>> components = new ArrayList<ArrayList<Coordinate[]>>();
-        
         assign(holes, holes(holes, numHoles), numHoles, edges(edges, numHoles, components), components);
-        
         return buildCoordinates(components);
     }
     
-    // Assign Hole to related components
     private static void assign(Edge[] holes, Coordinate[][] points, int numHoles, Edge[] edges, ArrayList<ArrayList<Coordinate[]>> components) {
+        // Assign Hole to related components
+        // To find the new component the hole belongs to all intersections of the
+        // polygon edges with a vertical line are calculated. This vertical line
+        // is an arbitrary point of the hole. The polygon edge next to this point
+        // is part of the polygon the hole belongs to.
         System.out.println("Holes ("+numHoles+"): " + Arrays.toString(holes));
         for (int i = 0; i < numHoles; i++) {
             final Edge current = holes[i];
-            final int intersections = intersections(current.next.coordinate.x, edges);
+            final int intersections = intersections(current.coordinate.x, edges);
             final int pos = Arrays.binarySearch(edges, 0, intersections, current, IntersectionOrder.INSTANCE);
             final int index = -(pos+2);
             final int component = -edges[index].component - numHoles - 1;
@@ -248,6 +254,15 @@ public class GeoPolygonBuilder {
         }
     }
     
+    /**
+     * Calculate the intersection of a line segment and a vertical dateline.
+     *  
+     * @param p1 start-point of the line segment
+     * @param p2 end-point of the line segment
+     * @param dateline x-coordinate of the vertical dateline 
+     * @return position of the intersection in the open range [0..1) if the line
+     * segment intersects with the line segment. Otherwise this method returns Nan
+     */
     private static final double intersection(Coordinate p1, Coordinate p2, double dateline) {
         if(p1.x == p2.x) {
             return Double.NaN;
@@ -262,6 +277,15 @@ public class GeoPolygonBuilder {
         }
     }
     
+    /**
+     * Calculate all intersections of line segments and a vertical line.
+     * The Array of edges will be ordered asc by the y-coordinate of the
+     * intersections of edges.
+     *  
+     * @param dateline x-coordinate of the dateline
+     * @param edges set of edges that may intersect with the dateline
+     * @return number of intersecting edges
+     */
     private static int intersections(double dateline, Edge[] edges) {
         int numIntersections = 0;
         for(int i=0; i<edges.length; i++) {
@@ -332,9 +356,6 @@ public class GeoPolygonBuilder {
         int component = -1;          // id of the component this edge belongs to 
         
         private Edge(Coordinate coordinate, Edge next, Coordinate intersection) {
-//            if(coordinate == null)
-//                throw new NullPointerException();
-            
             this.coordinate = coordinate;
             this.next = next;
             this.intersection = intersection;
@@ -357,6 +378,17 @@ public class GeoPolygonBuilder {
             return top;
         }
         
+        /**
+         * Concatenate a set of points to a polygon 
+         * @param component component id of the polygon
+         * @param direction direction of the ring
+         * @param points list of points to concatenate
+         * @param offset index of the first point
+         * @param edges Array of edges to write the result to 
+         * @param toffset index of the first edge in the result 
+         * @param length number of points to use
+         * @return the edges creates 
+         */
         private static Edge[] concat(int component, boolean direction, Coordinate[] points, int offset, Edge[] edges, int toffset, int length) {
             edges[toffset] = new Edge(points[offset], null);
             for (int i = 1; i < length; i++) {
@@ -390,11 +422,11 @@ public class GeoPolygonBuilder {
          * @param length number of points
          * @return Array of edges 
          */
-        protected static Edge[] ring(int component, boolean direction, Coordinate[] points, int offset, int length) {
-            return ring(component, direction, points, offset, new Edge[length], 0, length);
-        }
-        
         protected static Edge[] ring(int component, boolean direction, Coordinate[] points, int offset, Edge[] edges, int toffset, int length) {
+            // calculate the direction of the points:
+            // find the point a the top of the set and check its
+            // neighbors orientation. So direction is equivalent
+            // to clockwise/counterclockwise
             final int top = top(points, offset, length);
             final int prev = (offset + ((top + length - 1) % length));
             final int next = (offset + ((top + 1) % length));
