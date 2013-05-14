@@ -13,13 +13,19 @@ import java.awt.event.MouseWheelListener;
 import javax.swing.JFrame;
 
 import com.vividsolutions.jts.geom.Coordinate;
+import com.vividsolutions.jts.geom.Geometry;
+import com.vividsolutions.jts.geom.GeometryCollection;
+import com.vividsolutions.jts.geom.GeometryFactory;
+import com.vividsolutions.jts.geom.LineString;
+import com.vividsolutions.jts.geom.MultiPolygon;
+import com.vividsolutions.jts.geom.Polygon;
 
 public class TestFrame extends JFrame implements ComponentListener, MouseListener, MouseWheelListener, MouseMotionListener {
 
     private int currentPolygon = 0;
     
     private double scale = 1.2;
-    private final GeoPolygonBuilder polygons[];
+    private final GeometryBuilder polygons[];
     private double dateline = 180;
     private double[] center = new double[2]; 
     
@@ -37,9 +43,9 @@ public class TestFrame extends JFrame implements ComponentListener, MouseListene
         this.center[0] = getWidth() / 2;
         this.center[1] = getHeight() / 2;
         
-        polygons = new GeoPolygonBuilder[3];
+        polygons = new GeometryBuilder[3];
         
-        polygons[0] = new GeoPolygonBuilder()
+        polygons[0] = GeometryBuilder.newPolygon()
                 .point(0, -200)
                 .point(250, -200)
                 .point(250, 200)
@@ -82,7 +88,7 @@ public class TestFrame extends JFrame implements ComponentListener, MouseListene
                     .close()
                 .close();
 
-        polygons[1] = new GeoPolygonBuilder()
+        polygons[1] = GeometryBuilder.newPolygon()
           .point(0, 0)
           .point(-250, 250)
           .point(250, 100)
@@ -101,7 +107,7 @@ public class TestFrame extends JFrame implements ComponentListener, MouseListene
               .close()
           .close();
 
-        polygons[2] = new GeoPolygonBuilder()
+        polygons[2] = GeometryBuilder.newPolygon()
                 .point(0, -100)
                 .point(250, -100)
                 .point(250, 200)
@@ -136,6 +142,26 @@ public class TestFrame extends JFrame implements ComponentListener, MouseListene
         new TestFrame();
     }
 
+    public void drawGeometry(Graphics g, Geometry geometry, boolean info) {
+        if(geometry instanceof GeometryCollection) {
+            GeometryCollection collection = (GeometryCollection) geometry;
+            int numGeometry = collection.getNumGeometries();
+            for (int n = 0; n < numGeometry; n++) {
+                drawGeometry(g, collection.getGeometryN(n), info);
+            }
+        } else if (geometry instanceof Polygon) {
+            Polygon polygon = (Polygon) geometry;
+            int numRings = polygon.getNumInteriorRing();
+            for (int i = 0; i < numRings; i++) {
+                drawGeometry(g, polygon.getInteriorRingN(i), info);
+            }
+        } else if (geometry instanceof LineString) {
+            LineString linestring = (LineString) geometry;
+            drawPolygon(g, info, 0, linestring.getCoordinates());
+        }
+        
+    }
+    
     public void drawPolygon(Graphics g, boolean info, int shift, Coordinate...points) {
         drawPolygon(g, points, 0, points.length, info, shift);
     }
@@ -188,27 +214,9 @@ public class TestFrame extends JFrame implements ComponentListener, MouseListene
         int[] de2 = convert(new Coordinate(-dateline, +getHeight()/2));
         g.drawLine(ds2[0], 0, de2[0], getHeight());
         
-        
-        if(!decompose) {
-            Coordinate[][] points = polygons[currentPolygon].points();
 
-            g.setColor(Color.BLUE);
-            drawPolygon(g, points[0], 0, points[0].length, decompose, 0);
-            g.setColor(Color.RED);
-            for (int i = 1; i < points.length; i++) {
-                drawPolygon(g, points[i], 0, points[i].length, decompose, 1);
-            }
-        } else {
-            Coordinate[][][] components = polygons[currentPolygon].coordinates();
-            for (Coordinate[][] points : components) {
-                g.setColor(Color.BLUE);
-                drawPolygon(g, points[0], 0, points[0].length, decompose, 0);
-                g.setColor(Color.RED);
-                for (int i = 1; i < points.length; i++) {
-                    drawPolygon(g, points[i], 0, points[i].length, decompose, 1);
-                }
-            }
-        }
+        drawGeometry(g, polygons[currentPolygon].build(new GeometryFactory()), true);
+
         
 //        if(decompose) {
 //            Coordinate[][] coord = split(dateline, points);

@@ -24,62 +24,50 @@ import java.util.Arrays;
 import java.util.Comparator;
 
 import com.vividsolutions.jts.geom.Coordinate;
+import com.vividsolutions.jts.geom.Geometry;
+import com.vividsolutions.jts.geom.GeometryFactory;
+import com.vividsolutions.jts.geom.LinearRing;
+import com.vividsolutions.jts.geom.MultiPolygon;
+import com.vividsolutions.jts.geom.Polygon;
 
-public class GeoPolygonBuilder {
+public abstract class GeometryBuilder {
 
     private static final double DATELINE = 180d;
-    private final GeoRingBuilder<GeoPolygonBuilder> polygon = new GeoRingBuilder<GeoPolygonBuilder>(this, 0);
-    private final ArrayList<GeoRingBuilder<GeoPolygonBuilder>> holes = new ArrayList<GeoRingBuilder<GeoPolygonBuilder>>(); 
+    
+    public static PolygonBuilder newPolygon() {
+        return new PolygonBuilder();
+    }
+    
+    public static MultiPolygonBuilder newMultiPolygon() {
+        return new MultiPolygonBuilder();
+    }
 
-    public GeoPolygonBuilder point(double lat, double lon) {
-        polygon.point(lat, lon);
-        return this;
-    }
+    public abstract Geometry build(GeometryFactory factory);
     
-    public GeoRingBuilder<GeoPolygonBuilder> hole() {
-        GeoRingBuilder<GeoPolygonBuilder> hole = new GeoRingBuilder<GeoPolygonBuilder>(this, holes.size()+1);
-        this.holes.add(hole);
-        return hole;
-    }
-    
-    public GeoPolygonBuilder close() {
-        this.polygon.close();
-        return this;
-    }
-    
-    public Coordinate[][] points() {
-        Coordinate[][] points = new Coordinate[1+holes.size()][];
-        points[0] = polygon.coordinates.toArray(new Coordinate[polygon.coordinates.size()]);
-        for (int i = 0; i < holes.size(); i++) {
-            GeoRingBuilder<?> hole = holes.get(i);
-            points[1+i] = hole.coordinates.toArray(new Coordinate[hole.coordinates.size()]);
+    private static MultiPolygon multipolygon(GeometryFactory factory, Coordinate[][][] polygons) {
+        Polygon[] polygonSet = new Polygon[polygons.length];
+        for (int i = 0; i < polygonSet.length; i++) {
+            polygonSet[i] = polygon(factory, polygons[i]);
         }
-        return points;
+        return factory.createMultiPolygon(polygonSet);
     }
     
-    public Coordinate[][][] coordinates() {
-        int numEdges = polygon.coordinates.size();
-        for (int i = 0; i < holes.size(); i++) {
-            numEdges += holes.get(i).coordinates.size();
-        }
-        
-        Edge[] edges = new Edge[numEdges];
-        Edge[] holeComponents = new Edge[holes.size()];
-        
-        int offset = polygon.toArray(true, edges, 0);
-        for (int i = 0; i < holes.size(); i++) {
-            int length = this.holes.get(i).toArray(false, edges, offset);
-            holeComponents[i] = edges[offset];
-            offset += length;
-        }
+    private static Polygon polygon(GeometryFactory factory, Coordinate[][] polygon) {
 
-        int numHoles = holeComponents.length;
-        numHoles = merge(edges, 0, intersections(+DATELINE, edges), holeComponents, numHoles);
-        numHoles = merge(edges, 0, intersections(-DATELINE, edges), holeComponents, numHoles);
- 
-        return compose(edges, holeComponents, numHoles);
+        LinearRing shell = factory.createLinearRing(polygon[0]);
+        LinearRing[] holes;
+        
+        if(polygon.length > 1) {
+            holes = new LinearRing[polygon.length-1];
+            for (int i = 0; i < holes.length; i++) {
+                holes[i] = factory.createLinearRing(polygon[i+1]);
+            }
+        } else {
+            holes = null;
+        }
+        return factory.createPolygon(shell, holes);
     }
-    
+
     private static int component(final Edge edge, final int id, final ArrayList<Edge> edges) {
         System.out.print("Search shift...");
         // find a coordinate that is not part of the dateline 
@@ -183,13 +171,13 @@ public class GeoPolygonBuilder {
             ArrayList<Coordinate[]> component = components.get(i);
             result[i] = component.toArray(new Coordinate[component.size()][]);
         }
-        
-        for (int i = 0; i < result.length; i++) {
-            System.out.println("Component " + i + ":");
-            for (int j = 0; j < result[i].length; j++) {
-                System.out.println("\t" + Arrays.toString(result[i][j]));
-            }
-        }
+//        
+//        for (int i = 0; i < result.length; i++) {
+//            System.out.println("Component " + i + ":");
+//            for (int j = 0; j < result[i].length; j++) {
+//                System.out.println("\t" + Arrays.toString(result[i][j]));
+//            }
+//        }
 
         return result;
     } 
@@ -302,7 +290,7 @@ public class GeoPolygonBuilder {
                         // Ignore the ear
                         continue;
                     }else if(p2.x == dateline) {
-                        // Ignore Linesegments on dateline 
+                        // Ignore Linesegment on dateline
                         continue;
                     }
                 }
@@ -349,6 +337,109 @@ public class GeoPolygonBuilder {
         } 
     }
 
+    public static class MultiPolygonBuilder extends GeometryBuilder {
+        private final ArrayList<EmbeddedPolygonBuilder<MultiPolygonBuilder>> polygons = new ArrayList<EmbeddedPolygonBuilder<MultiPolygonBuilder>>();
+        
+        public EmbeddedPolygonBuilder<MultiPolygonBuilder> polygon() {
+            EmbeddedPolygonBuilder<MultiPolygonBuilder> polygon = new EmbeddedPolygonBuilder<MultiPolygonBuilder>(this);
+            this.polygons.add(polygon);
+            return polygon;
+        }
+        
+        @Override
+        public Geometry build(GeometryFactory factory) {
+            ArrayList<Polygon> polygons = new ArrayList<Polygon>();
+            for (int i = 0; i < this.polygons.size(); i++) {
+                Coordinate[][][] coordinates = this.polygons.get(i).coordinates();
+                for (Coordinate[][] polygon : coordinates) {
+                    polygons.add(polygon(factory, polygon));
+                }
+            }
+            return factory.createMultiPolygon(polygons.toArray(new Polygon[polygons.size()]));
+        }
+    }
+
+    public static class PolygonBuilder extends EmbeddedPolygonBuilder<PolygonBuilder> {
+        public PolygonBuilder() {
+            super(null);
+        }
+        
+        @Override
+        public PolygonBuilder close() {
+            super.close();
+            return this;
+        }
+    }
+
+    public static class EmbeddedPolygonBuilder<E extends GeometryBuilder> extends GeometryBuilder {
+        
+        private final E parent;
+        private final GeoRingBuilder<EmbeddedPolygonBuilder<E>> polygon = new GeoRingBuilder<EmbeddedPolygonBuilder<E>>(this, 0);
+        private final ArrayList<GeoRingBuilder<EmbeddedPolygonBuilder<E>>> holes = new ArrayList<GeoRingBuilder<EmbeddedPolygonBuilder<E>>>(); 
+
+        private EmbeddedPolygonBuilder(E parent) {
+            this.parent = parent;
+        }
+        
+        public EmbeddedPolygonBuilder<E> point(double lat, double lon) {
+            polygon.point(lat, lon);
+            return this;
+        }
+    
+        public GeoRingBuilder<EmbeddedPolygonBuilder<E>> hole() {
+            GeoRingBuilder<EmbeddedPolygonBuilder<E>> hole = new GeoRingBuilder<EmbeddedPolygonBuilder<E>>(this, holes.size()+1);
+            this.holes.add(hole);
+            return hole;
+        }
+        
+        public E close() {
+            this.polygon.close();
+            return parent;
+        }
+    
+        public Coordinate[][] points() {
+            Coordinate[][] points = new Coordinate[1+holes.size()][];
+            points[0] = polygon.coordinates.toArray(new Coordinate[polygon.coordinates.size()]);
+            for (int i = 0; i < holes.size(); i++) {
+                GeoRingBuilder<?> hole = holes.get(i);
+                points[1+i] = hole.coordinates.toArray(new Coordinate[hole.coordinates.size()]);
+            }
+            return points;
+        }
+        
+        public Coordinate[][][] coordinates() {
+            int numEdges = polygon.coordinates.size();
+            for (int i = 0; i < holes.size(); i++) {
+                numEdges += holes.get(i).coordinates.size();
+            }
+            
+            Edge[] edges = new Edge[numEdges];
+            Edge[] holeComponents = new Edge[holes.size()];
+            
+            int offset = polygon.toArray(true, edges, 0);
+            for (int i = 0; i < holes.size(); i++) {
+                int length = this.holes.get(i).toArray(false, edges, offset);
+                holeComponents[i] = edges[offset];
+                offset += length;
+            }
+
+            int numHoles = holeComponents.length;
+            numHoles = merge(edges, 0, intersections(+DATELINE, edges), holeComponents, numHoles);
+            numHoles = merge(edges, 0, intersections(-DATELINE, edges), holeComponents, numHoles);
+     
+            return compose(edges, holeComponents, numHoles);
+        }
+        
+        @Override
+        public Geometry build(GeometryFactory factory) {
+            Coordinate[][][] polygons = coordinates();
+            return polygons.length==1
+                    ? polygon(factory, polygons[1])
+                    : multipolygon(factory, polygons);
+        }
+
+    }
+    
     protected static final class Edge {
         Coordinate coordinate;       // coordinate of the start point
         Edge next;                   // next segment

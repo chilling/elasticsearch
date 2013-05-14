@@ -24,14 +24,18 @@ import com.spatial4j.core.shape.impl.RectangleImpl;
 import com.spatial4j.core.shape.jts.JtsGeometry;
 import com.spatial4j.core.shape.jts.JtsPoint;
 import com.vividsolutions.jts.geom.Coordinate;
+import com.vividsolutions.jts.geom.Geometry;
 import com.vividsolutions.jts.geom.GeometryFactory;
 import com.vividsolutions.jts.geom.LinearRing;
+import com.vividsolutions.jts.geom.MultiPolygon;
 import com.vividsolutions.jts.geom.Polygon;
 import org.elasticsearch.ElasticSearchParseException;
+import org.elasticsearch.common.geo.GeometryBuilder.GeoRingBuilder;
 import org.elasticsearch.common.xcontent.XContentParser;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 
@@ -172,18 +176,29 @@ public class GeoJSONShapeParser {
      * @param node CoordinateNode that the Polygon will be built from
      * @return Polygon consisting of the coordinates in the CoordinateNode
      */
-    private static Polygon buildPolygon(CoordinateNode node) {
-        LinearRing shell = GEOMETRY_FACTORY.createLinearRing(toCoordinates(node.children.get(0)));
-        LinearRing[] holes = null;
+    private static Geometry buildPolygon(CoordinateNode node) {
+        GeometryBuilder builder = new GeometryBuilder();
+
+        CoordinateNode root = node.children.get(0);
+        for(int i=0; i<root.children.size(); i++) {
+            CoordinateNode c = root.children.get(i);
+            builder.point(c.coordinate.y, c.coordinate.x);
+        }
+        
         if (node.children.size() > 1) {
-            holes = new LinearRing[node.children.size() - 1];
-            for (int i = 0; i < node.children.size() - 1; i++) {
-                holes[i] = GEOMETRY_FACTORY.createLinearRing(toCoordinates(node.children.get(i + 1)));
+            for (int j = 1; j < node.children.size(); j++) {
+                CoordinateNode hole = node.children.get(j);
+                GeoRingBuilder<GeometryBuilder> inner = builder.hole();
+                for(int i=0; i<hole.children.size(); i++) {
+                    CoordinateNode c = hole.children.get(i);
+                    inner.point(c.coordinate.y, c.coordinate.x);
+                }
             }
         }
-        return GEOMETRY_FACTORY.createPolygon(shell, holes);
-    }
 
+        return builder.geometry(GEOMETRY_FACTORY);
+    }
+    
     /**
      * Converts the children of the given CoordinateNode into an array of
      * {@link Coordinate}.
