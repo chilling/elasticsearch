@@ -1,6 +1,7 @@
-package org.elasticsearch.common.geo;
+package org.elasticsearch.benchmark.search.geo;
 
 import java.io.IOException;
+
 
 import org.elasticsearch.action.admin.indices.create.CreateIndexRequestBuilder;
 import org.elasticsearch.action.admin.indices.exists.indices.IndicesExistsResponse;
