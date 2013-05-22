@@ -19,7 +19,6 @@
 
 package org.elasticsearch.index.query;
 
-import com.spatial4j.core.shape.Shape;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.spatial.prefix.PrefixTreeStrategy;
 import org.apache.lucene.spatial.query.SpatialArgs;
@@ -29,6 +28,7 @@ import org.elasticsearch.common.Nullable;
 import org.elasticsearch.common.Strings;
 import org.elasticsearch.common.geo.GeoJSONShapeParser;
 import org.elasticsearch.common.geo.ShapeRelation;
+import org.elasticsearch.common.geo.UnparsedGeometry;
 import org.elasticsearch.common.inject.Inject;
 import org.elasticsearch.common.xcontent.XContentParser;
 import org.elasticsearch.index.mapper.FieldMapper;
@@ -61,7 +61,7 @@ public class GeoShapeQueryParser implements QueryParser {
         String fieldName = null;
         ShapeRelation shapeRelation = ShapeRelation.INTERSECTS;
         String strategyName = null;
-        Shape shape = null;
+        UnparsedGeometry shape = null;
 
         String id = null;
         String type = null;
@@ -159,14 +159,14 @@ public class GeoShapeQueryParser implements QueryParser {
         this.fetchService = fetchService;
     }
     
-    public static SpatialArgs getArgs(Shape shape, ShapeRelation relation) {
+    public static SpatialArgs getArgs(UnparsedGeometry shape, ShapeRelation relation) {
         switch(relation) {
         case DISJOINT:
-            return new SpatialArgs(SpatialOperation.IsDisjointTo, shape);
+            return new SpatialArgs(SpatialOperation.IsDisjointTo, shape.build(true));
         case INTERSECTS:
-            return new SpatialArgs(SpatialOperation.Intersects, shape);
+            return new SpatialArgs(SpatialOperation.Intersects, shape.build(true));
         case WITHIN:
-            return new SpatialArgs(SpatialOperation.IsWithin, shape);
+            return new SpatialArgs(SpatialOperation.IsWithin, shape.build(true));
         default:
             throw new ElasticSearchIllegalArgumentException("");
         

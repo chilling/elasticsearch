@@ -9,9 +9,17 @@ import java.awt.event.MouseListener;
 import java.awt.event.MouseMotionListener;
 import java.awt.event.MouseWheelEvent;
 import java.awt.event.MouseWheelListener;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collection;
 
 import javax.swing.JFrame;
 
+import org.elasticsearch.common.geo.builders.GeoShapeBuilder;
+import org.elasticsearch.common.xcontent.XContentBuilder;
+import org.elasticsearch.common.xcontent.ToXContent.Params;
+
+import com.spatial4j.core.shape.Shape;
 import com.vividsolutions.jts.geom.Coordinate;
 import com.vividsolutions.jts.geom.Geometry;
 import com.vividsolutions.jts.geom.GeometryCollection;
@@ -24,10 +32,12 @@ public class TestFrame extends JFrame implements ComponentListener, MouseListene
 
     private int currentPolygon = 0;
     
-    private double scale = 1.2;
-    private final GeometryBuilder polygons[];
+    private double scale = 1.50;
+    private final GeoShapeBuilder polygons[];
     private double dateline = 180;
-    private double[] center = new double[2]; 
+    private double[] center = new double[2];
+    
+    private final Collection<Geometry> geometires = new ArrayList<Geometry>();
     
     public TestFrame() {
         super("polygon intersection");
@@ -43,9 +53,9 @@ public class TestFrame extends JFrame implements ComponentListener, MouseListene
         this.center[0] = getWidth() / 2;
         this.center[1] = getHeight() / 2;
         
-        polygons = new GeometryBuilder[3];
+        polygons = new GeoShapeBuilder[3];
         
-        polygons[0] = GeometryBuilder.newPolygon()
+        polygons[0] = GeoShapeBuilder.newPolygon()
                 .point(0, -200)
                 .point(250, -200)
                 .point(250, 200)
@@ -88,7 +98,7 @@ public class TestFrame extends JFrame implements ComponentListener, MouseListene
                     .close()
                 .close();
 
-        polygons[1] = GeometryBuilder.newPolygon()
+        polygons[1] = GeoShapeBuilder.newPolygon()
           .point(0, 0)
           .point(-250, 250)
           .point(250, 100)
@@ -107,7 +117,7 @@ public class TestFrame extends JFrame implements ComponentListener, MouseListene
               .close()
           .close();
 
-        polygons[2] = GeometryBuilder.newPolygon()
+        polygons[2] = GeoShapeBuilder.newPolygon()
                 .point(0, -100)
                 .point(250, -100)
                 .point(250, 200)
@@ -120,28 +130,13 @@ public class TestFrame extends JFrame implements ComponentListener, MouseListene
     }
     
     public static void main(String[] args) {
-        
-//        Node node = NodeBuilder.nodeBuilder().node();
-//        Client client = node.client();
-//                
-//        String mapping = JsonXContent.contentBuilder()
-//                .startObject()
-//                .startObject("properties")
-//                .field("type", "geo_shape")
-//                .endObject()
-//                .endObject()
-//                .string();
-//            
-//        client.admin().indices().prepareCreate("geo").addMapping("polygon", mapping).execute().actionGet();
-//        
-//        client.prepareIndex("geo", "polygons").setCreate(true).setSource(
-//                ).;
-        
-//        GeoPolygonBuilder.main(args);
-        
         new TestFrame();
     }
 
+    public Collection<Geometry> geomeries() {
+        return geometires;
+    }
+    
     public void drawGeometry(Graphics g, Geometry geometry, boolean info) {
         if(geometry instanceof GeometryCollection) {
             GeometryCollection collection = (GeometryCollection) geometry;
@@ -151,6 +146,9 @@ public class TestFrame extends JFrame implements ComponentListener, MouseListene
             }
         } else if (geometry instanceof Polygon) {
             Polygon polygon = (Polygon) geometry;
+            g.setColor(Color.BLUE);
+            drawGeometry(g, polygon.getExteriorRing(), info);
+            g.setColor(Color.RED);
             int numRings = polygon.getNumInteriorRing();
             for (int i = 0; i < numRings; i++) {
                 drawGeometry(g, polygon.getInteriorRingN(i), info);
@@ -168,6 +166,7 @@ public class TestFrame extends JFrame implements ComponentListener, MouseListene
     
     public void drawPolygon(Graphics g, Coordinate[] points, int offset, int length, boolean info, int shift) {
         Color color = g.getColor();
+        int s = 2;
         for (int i = 0; i < length; i++) {
             Coordinate p0 = points[(offset+((i+0) % length)) % points.length];
             Coordinate p1 = points[(offset+((i+1) % length)) % points.length];
@@ -176,7 +175,7 @@ public class TestFrame extends JFrame implements ComponentListener, MouseListene
             int[] q = convert(p1);
 
             g.drawLine(p[0]+shift, p[1]+shift, q[0]+shift, q[1]+shift);
-            g.fillOval(p[0]-4+shift, p[1]-4+shift, 8, 8);
+            g.fillOval(p[0]-s+shift, p[1]-s+shift, 2*s, 2*s);
             if(info) {
                 String text = "p"+(offset+i) + " = ("+p0.x+", "+p0.y+")";
                 
@@ -187,7 +186,7 @@ public class TestFrame extends JFrame implements ComponentListener, MouseListene
 //                g.fillRect(p[0]+4, p[1]+4-h, w, h);
                 
                 g.setColor(Color.WHITE);
-                g.drawString(text, p[0]+4+shift, p[1]+2+shift);
+                g.drawString(text, p[0]+s+shift, p[1]+s+shift);
                 g.setColor(color);
             }
         }        
@@ -213,7 +212,10 @@ public class TestFrame extends JFrame implements ComponentListener, MouseListene
         int[] ds2 = convert(new Coordinate(-dateline, -getHeight()/2));
         int[] de2 = convert(new Coordinate(-dateline, +getHeight()/2));
         g.drawLine(ds2[0], 0, de2[0], getHeight());
-        
+
+        for (Geometry geometry : geometires) {
+            drawGeometry(g, geometry, false);
+        }
 
         drawGeometry(g, polygons[currentPolygon].build(new GeometryFactory()), true);
 
@@ -231,7 +233,7 @@ public class TestFrame extends JFrame implements ComponentListener, MouseListene
     private int[] convert(Coordinate coordinate) {
         return new int[] {
                 Math.round(Math.round(scale*(center[0]+coordinate.x))),
-                Math.round(Math.round(scale*(center[1]+coordinate.y))),
+                Math.round(Math.round(scale*(center[1]-coordinate.y))),
         };
     }
 
@@ -298,7 +300,7 @@ public class TestFrame extends JFrame implements ComponentListener, MouseListene
     
     @Override
     public void mouseWheelMoved(MouseWheelEvent e) {
-        scale = scale + 0.01 * e.getPreciseWheelRotation();
+        scale = scale + 0.1 * e.getPreciseWheelRotation();
         this.repaint();
     }
     

@@ -19,6 +19,7 @@
 
 package org.elasticsearch.common.geo;
 
+
 /**
  *
  */

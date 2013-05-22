@@ -17,6 +17,7 @@
 
 package org.elasticsearch.common.geo;
 
+
 import gnu.trove.map.hash.TIntIntHashMap;
 
 /**

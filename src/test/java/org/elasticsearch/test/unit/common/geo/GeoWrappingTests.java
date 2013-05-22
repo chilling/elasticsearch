@@ -21,34 +21,126 @@ package org.elasticsearch.test.unit.common.geo;
 
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Locale;
+import java.util.Map;
+import java.util.TreeMap;
 
-import org.apache.lucene.util.BytesRef;
+import org.elasticsearch.ElasticSearchIllegalArgumentException;
 import org.elasticsearch.action.admin.indices.create.CreateIndexResponse;
-import org.elasticsearch.action.get.GetResponse;
-import org.elasticsearch.action.index.IndexResponse;
 import org.elasticsearch.client.Client;
+import org.elasticsearch.common.geo.GeoJSONShapeParser;
+import org.elasticsearch.common.geo.GeoShapeConstants;
+import org.elasticsearch.common.geo.GeometryBuilder;
+import org.elasticsearch.common.geo.TestFrame;
+import org.elasticsearch.common.geo.builders.CircleBuilder;
+import org.elasticsearch.common.geo.builders.EnvelopeBuilder;
+import org.elasticsearch.common.geo.builders.GeoShapeBuilder;
+import org.elasticsearch.common.xcontent.XContent;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.common.xcontent.XContentParser;
+import org.elasticsearch.common.xcontent.XContentType;
+import org.elasticsearch.common.xcontent.XContentParser.Token;
 import org.elasticsearch.common.xcontent.json.JsonXContent;
-import org.elasticsearch.common.xcontent.json.JsonXContentParser;
 import org.elasticsearch.node.Node;
 import org.elasticsearch.node.NodeBuilder;
 import org.testng.annotations.Test;
 
+import com.spatial4j.core.shape.Shape;
+import com.spatial4j.core.shape.jts.JtsGeometry;
+import com.vividsolutions.jts.geom.Coordinate;
+import com.vividsolutions.jts.geom.Geometry;
+import com.vividsolutions.jts.geom.GeometryFactory;
+
 public class GeoWrappingTests {
 
+    public static void main(String[] args) throws IOException {
+        
+        XContentBuilder builder = JsonXContent.contentBuilder();
+
+        CircleBuilder circle = GeoShapeBuilder.newCircleBuilder().center(10, 20).radius(10, "m");
+        EnvelopeBuilder envelope = GeoShapeBuilder.newEnvelope().northWest(10, 20).southEast(20, 30);
+        
+        builder.startObject();
+        builder.field("aCricle", circle);
+        builder.field("anEnvelope", envelope);
+        builder.endObject();
+        
+        System.out.println(builder.prettyPrint().string());
+        
+        XContentParser parser = JsonXContent.jsonXContent.createParser(builder.string());
+        if(parser.nextToken() == Token.START_OBJECT) {
+            
+            while(parser.nextToken() != Token.END_OBJECT) {
+                if(parser.currentToken() == Token.FIELD_NAME) {
+                    System.out.println("Field: " + parser.text());
+                } else if(parser.currentToken() == Token.START_OBJECT) {
+                    GeoShapeBuilder shape = GeoShapeBuilder.parse(parser);
+                    System.out.println(shape);
+                }
+            }
+        } else {
+            System.out.println("Not an Object");
+        }
+        
+    }
+    
     @Test
     public void wrappingTest() throws IOException {
-        FileInputStream in = new FileInputStream("/home/schilling/Desktop/countries.geo.json");
+        XContentBuilder mapping = JsonXContent.contentBuilder()
+                .startObject()
+                    .startObject("collection")
+                        .startObject("properties")
+                            .startObject("type")
+                                .field("type", "string")
+                            .endObject()
+                            .startObject("id")
+                                .field("type", "string")
+                            .endObject()
+                            .startObject("features")
+                                .startObject("properties")
+                                    .startObject("name")
+                                        .field("type", "string")
+                                    .endObject()
+                                    .startObject("geometry")
+                                        .field("type", "geo_shape")
+                                    .endObject()
+                                .endObject()
+                            .endObject()
+                        .endObject()
+                    .endObject()
+                .endObject();
+        
+        System.out.println("Mapping + " + mapping.prettyPrint().string());
 
-        StringBuilder sb = new StringBuilder();
-        int c;
-        while((c=in.read())>=0) {
-            sb.append((char)c);
+        
+        FileInputStream in = new FileInputStream("/home/schilling/Desktop/countries.geo.json.1");
+
+//        StringBuilder sb = new StringBuilder();
+//        int c;
+//        while((c=in.read())>=0) {
+//            sb.append((char)c);
+//        }
+//        System.out.println(sb.toString());
+
+        XContentParser parser = JsonXContent.jsonXContent.createParser(in);
+
+        if(parser.nextToken() == Token.START_OBJECT) {
+            TestFrame testFrame = new TestFrame();
+            parseObject(parser, testFrame.geomeries());
+
+            
+            try {
+                Thread.sleep(200000);
+            } catch (InterruptedException e) {
+                // TODO: handle exception
+            }
         }
-
-
-        System.out.println(sb.toString());
+        
+        if(true) return;
+        
+        
 
         
         String clusterName = "test1";
@@ -64,28 +156,6 @@ public class GeoWrappingTests {
             client.admin().indices().prepareDelete("collections").execute().actionGet();
         }
         
-        XContentBuilder mapping = JsonXContent.contentBuilder().startObject()
-                .startObject("collection")
-                .startObject("properties")
-                    .startObject("type")
-                        .field("type", "string")
-                    .endObject()
-                    .startObject("id")
-                        .field("type", "string")
-                    .endObject()
-                    .startObject("features")
-                        .startObject("properties")
-                            .startObject("name")
-                                .field("type", "string")
-                            .endObject()
-                            .startObject("geometry")
-                                .field("type", "geo_shape")
-                            .endObject()
-                        .endObject()
-                    .endObject()
-                .endObject()
-                .endObject()
-                .endObject();
         
         System.out.println(client.admin().indices().prepareCreate("collections").addMapping("collection", mapping));
         
@@ -98,17 +168,164 @@ public class GeoWrappingTests {
         
         System.out.println(create);
         
-        IndexResponse indexed = client.prepareIndex("collections", "collection").setCreate(true).setSource(sb.toString()).execute().actionGet();
+//        IndexResponse indexed = client.prepareIndex("collections", "collection").setCreate(true).setSource(sb.toString()).execute().actionGet();
         
-        System.out.println(indexed);
+//        System.out.println(indexed);
         
-        GetResponse object = client.prepareGet("collections", "collection", indexed.getId()).execute().actionGet();
+//        GetResponse object = client.prepareGet("collections", "collection", indexed.getId()).execute().actionGet();
         
-        System.out.println(object.getSourceAsString());
+//        System.out.println(object.getSourceAsString());
         
         client.close();
         node1.close();
         node2.close();
-    } 
+    }
+    
+    public static Geometry convert(String type, Object coordinates) {
+        if("polygon".equals(type.toLowerCase(Locale.getDefault()))) {
+            Coordinate[][] points = (Coordinate[][]) coordinates;
+            return GeometryBuilder.polygon(new GeometryFactory(), points);
+        } else if("multipolygon".equals(type.toLowerCase(Locale.getDefault()))) {
+            Coordinate[][][] points = (Coordinate[][][]) coordinates;
+            return GeometryBuilder.multipolygon(new GeometryFactory(), points);
+        } else {
+            throw new ElasticSearchIllegalArgumentException("unknown type '"+type+"'");
+        }
+    }
+    
+    public static Shape shape(Geometry geometry) {
+        return new JtsGeometry(
+                geometry,
+                GeoShapeConstants.SPATIAL_CONTEXT,
+                true);
+    }
+    
+    public static Shape parseGeometry(XContentParser parser, Collection<Geometry> geometries) throws IOException {
+//        String type=null;
+//        Object coordinates = null;
+//        for(Token token = parser.nextToken(); token != Token.END_OBJECT; token = parser.nextToken()) {
+//            System.out.println("\t" + parser.currentName());
+//            if(token == Token.FIELD_NAME) {
+//                token = parser.nextToken();
+//                if(parser.currentName().equals("type")) {
+//                    type = parser.text();
+//                } else if(parser.currentName().toLowerCase(Locale.getDefault()).equals("coordinates")) {
+//                    System.out.println("==========================");
+//                    coordinates = parseArray(parser, geometries);
+//                    
+//                    System.out.println(coordinates);
+//                    System.out.println("==========================");
+//                    
+//                } else if(token == Token.START_OBJECT) {
+//                    parseObject(parser, geometries);
+//                } else if(token == Token.START_ARRAY) {
+//                    parseArray(parser, geometries);
+//                }
+//            }
+//        }
+//        
+        
+        //return convert(type, coordinates);
+        
+        return GeoJSONShapeParser.parse(parser);
+    }
+    
+    public static Map<String, Object> parseObject(XContentParser parser, Collection<Geometry> geometries) throws IOException {
+        Map<String, Object> result = new TreeMap<String, Object>();
+        for(Token token = parser.nextToken(); token != Token.END_OBJECT; token = parser.nextToken()) {
+            if(token == Token.START_OBJECT) {
+                String name = parser.currentName();
+                if("geometry".equals(name)) {
+//                    Geometry geometry = parseGeometry(parser, geometries);
+//                    
+//                    try {
+//                        shape(geometry);
+//                    } catch (Throwable e) {
+//                        geometries.add(geometry);
+//                        e.printStackTrace();
+//                    }
+                    
+                    result.put(name, parseGeometry(parser, geometries));
+                } else {
+                    result.put(name, parseObject(parser, geometries));
+                }
+            } else if (token == Token.START_ARRAY) {
+                String name = parser.currentName();
+                result.put(name, parseArray(parser, geometries));
+            } else if (token == Token.VALUE_STRING) {
+                System.out.println(parser.text());
+                result.put(parser.currentName(), parser.text());
+            } else if (token == Token.VALUE_NUMBER) {
+                result.put(parser.currentName(), parser.doubleValue());
+            }
+        }
+        return result;
+    }
+    
+    public static Object parseArray(XContentParser parser, Collection<Geometry> geometries) throws IOException {
+        ArrayList<Object> result = new ArrayList<Object>();
+
+        boolean isCoord = true;
+        boolean isCoordArray = true;
+        boolean isCoordArrayArray = true;
+        boolean isCoordArrayArrayArray = true;
+        
+        for(Token token = parser.nextToken(); token != Token.END_ARRAY; token = parser.nextToken()) {
+            if(token == Token.START_OBJECT) {
+                result.add(parseObject(parser, geometries));
+                isCoord = false;
+                isCoordArray = false;
+                isCoordArrayArray = false;
+                isCoordArrayArrayArray = false;
+            } else if (token == Token.START_ARRAY) {
+                
+                Object array = parseArray(parser, geometries);
+                
+                if(!(array instanceof Coordinate)) {
+                    isCoordArray = false;
+                }
+                if(!(array instanceof Coordinate[])) {
+                    isCoordArrayArray = false;
+                }
+                if(!(array instanceof Coordinate[][])) {
+                    isCoordArrayArrayArray = false;
+                }
+                
+                result.add(array);
+                isCoord = false;
+            } else if (token == Token.VALUE_NUMBER) {
+                result.add(parser.doubleValue());
+                isCoordArray = false;
+                isCoordArrayArray = false;
+                isCoordArrayArrayArray = false;
+            }
+        }
+        
+        if(isCoord) {
+            double[] coords = new double[result.size()];
+            for (int i = 0; i < coords.length; i++) {
+                coords[i] = (Double)(result.get(i));
+            }
+            
+            Coordinate c = new Coordinate(coords[0], coords[1]);
+            
+            return c;
+        } else {
+            
+            if(isCoordArray) {
+                Coordinate[] coords = result.toArray(new Coordinate[result.size()]);
+                return coords;
+            } else if(isCoordArrayArray) {
+                Coordinate[][] coords = result.toArray(new Coordinate[result.size()][]);
+                return coords;
+            } else if(isCoordArrayArrayArray) {
+                Coordinate[][][] coords = result.toArray(new Coordinate[result.size()][][]);
+                return coords;
+            } else {
+                Object[] test = result.toArray(new Object[result.size()]);
+                return test;
+            }
+        }
+    }
     
 }

@@ -18,6 +18,9 @@
  */
 package org.elasticsearch.index.mapper.geo;
 
+import java.io.IOException;
+import java.util.Map;
+
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.index.FieldInfo;
@@ -33,6 +36,7 @@ import org.elasticsearch.common.geo.GeoJSONShapeParser;
 import org.elasticsearch.common.geo.GeoShapeConstants;
 import org.elasticsearch.common.geo.GeoUtils;
 import org.elasticsearch.common.geo.SpatialStrategy;
+import org.elasticsearch.common.geo.builders.GeoShapeBuilder;
 import org.elasticsearch.common.unit.DistanceUnit;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.index.codec.postingsformat.PostingsFormatProvider;
@@ -42,11 +46,6 @@ import org.elasticsearch.index.mapper.Mapper;
 import org.elasticsearch.index.mapper.MapperParsingException;
 import org.elasticsearch.index.mapper.ParseContext;
 import org.elasticsearch.index.mapper.core.AbstractFieldMapper;
-
-import com.spatial4j.core.shape.Shape;
-
-import java.io.IOException;
-import java.util.Map;
 
 /**
  * FieldMapper for indexing {@link com.spatial4j.core.shape.Shape}s.
@@ -215,8 +214,8 @@ public class GeoShapeFieldMapper extends AbstractFieldMapper<String> {
     @Override
     public void parse(ParseContext context) throws IOException {
         try {
-            Shape shape = GeoJSONShapeParser.parse(context.parser());
-            Field[] fields = defaultStrategy.createIndexableFields(shape);
+            GeoShapeBuilder geometry = GeoShapeBuilder.parse(context.parser());
+            Field[] fields = defaultStrategy.createIndexableFields(geometry.buildShape());
             if (fields == null || fields.length == 0) {
                 return;
             }

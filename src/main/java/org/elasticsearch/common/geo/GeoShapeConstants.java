@@ -25,6 +25,7 @@ import com.spatial4j.core.context.jts.JtsSpatialContext;
  * Common constants through the GeoShape codebase
  */
 public interface GeoShapeConstants {
-
+    
     public static final JtsSpatialContext SPATIAL_CONTEXT = new JtsSpatialContext(true);
+    
 }
