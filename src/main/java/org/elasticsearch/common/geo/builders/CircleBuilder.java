@@ -7,9 +7,8 @@ import org.elasticsearch.common.unit.DistanceUnit;
 import org.elasticsearch.common.unit.DistanceUnit.Distance;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 
-import com.spatial4j.core.shape.Shape;
+import com.spatial4j.core.shape.Circle;
 import com.vividsolutions.jts.geom.Coordinate;
-import com.vividsolutions.jts.geom.GeometryFactory;
 
 public class CircleBuilder extends GeoShapeBuilder {
     
@@ -57,9 +56,9 @@ public class CircleBuilder extends GeoShapeBuilder {
         toXContent(builder, center);
         return builder.endObject();
     }
-
+    
     @Override
-    public Shape buildShape(GeometryFactory factory, boolean fixDateline) {
+    public Circle buildShape() {
         return GeoShapeConstants.SPATIAL_CONTEXT.makeCircle(center.x, center.y, 180 * radius / unit.getEarthCircumference());
     }
 

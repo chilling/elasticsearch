@@ -62,21 +62,21 @@ public class LineStringBuilder extends PointCollection {
     }
     
     @Override
-    public Shape buildShape(GeometryFactory factory, boolean fixDateline) {
+    public Shape buildShape() {
         Coordinate[] coordinates = points.toArray(new Coordinate[points.size()]);
         Geometry geometry;
         if(fixDateline) {
-            ArrayList<LineString> strings = decompose(factory, coordinates, new ArrayList<LineString>());
+            ArrayList<LineString> strings = decompose(FACTORY, coordinates, new ArrayList<LineString>());
 
             if(strings.size() == 1) {
                 geometry = strings.get(0);
             } else {
                 LineString[] linestrings = strings.toArray(new LineString[strings.size()]);
-                geometry = factory.createMultiLineString(linestrings);
+                geometry = FACTORY.createMultiLineString(linestrings);
             }
 
         } else {
-            geometry = factory.createLineString(coordinates);
+            geometry = FACTORY.createLineString(coordinates);
         }
         return new JtsGeometry(geometry, GeoShapeConstants.SPATIAL_CONTEXT, fixDateline);
     }

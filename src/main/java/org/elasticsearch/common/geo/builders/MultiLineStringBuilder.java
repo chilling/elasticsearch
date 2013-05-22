@@ -11,7 +11,6 @@ import com.spatial4j.core.shape.Shape;
 import com.spatial4j.core.shape.jts.JtsGeometry;
 import com.vividsolutions.jts.geom.Coordinate;
 import com.vividsolutions.jts.geom.Geometry;
-import com.vividsolutions.jts.geom.GeometryFactory;
 import com.vividsolutions.jts.geom.LineString;
 
 public class MultiLineStringBuilder extends GeoShapeBuilder {
@@ -54,25 +53,25 @@ public class MultiLineStringBuilder extends GeoShapeBuilder {
     }
     
     @Override
-    public Shape buildShape(GeometryFactory factory, boolean fixDateline) {
+    public Shape buildShape() {
         final Geometry geometry;
         if(fixDateline) {
             ArrayList<LineString> parts = new ArrayList<LineString>();
             for (LineStringBuilder line : lines) {
-                LineStringBuilder.decompose(factory, line.coordinates(false), parts);
+                LineStringBuilder.decompose(FACTORY, line.coordinates(false), parts);
             }
             if(parts.size() == 1) {
                 geometry = parts.get(0);
             } else {
                 LineString[] lineStrings = parts.toArray(new LineString[parts.size()]);
-                geometry = factory.createMultiLineString(lineStrings);
+                geometry = FACTORY.createMultiLineString(lineStrings);
             }
         } else {
             LineString[] lineStrings = new LineString[lines.size()];
             for (int i = 0; i < lineStrings.length; i++) {
-                lineStrings[i] = factory.createLineString(lines.get(i).coordinates(false));
+                lineStrings[i] = FACTORY.createLineString(lines.get(i).coordinates(false));
             }
-            geometry = factory.createMultiLineString(lineStrings);
+            geometry = FACTORY.createMultiLineString(lineStrings);
         }
         
         return new JtsGeometry(geometry, GeoShapeConstants.SPATIAL_CONTEXT, true);

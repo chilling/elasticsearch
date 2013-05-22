@@ -19,9 +19,9 @@
 
 package org.elasticsearch.index.query;
 
-import com.spatial4j.core.shape.Shape;
 import org.elasticsearch.common.Nullable;
 import org.elasticsearch.common.geo.ShapeRelation;
+import org.elasticsearch.common.geo.builders.GeoShapeBuilder;
 
 /**
  * A static factory for simple "import static" usage.
@@ -365,7 +365,7 @@ public abstract class FilterBuilders {
      * @param shape Shape to use in the filter
      * @param relation relation of the shapes
      */
-    public static GeoShapeFilterBuilder geoShapeFilter(String name, Shape shape, ShapeRelation relation) {
+    public static GeoShapeFilterBuilder geoShapeFilter(String name, GeoShapeBuilder shape, ShapeRelation relation) {
         return new GeoShapeFilterBuilder(name, shape, relation);
     }
 
@@ -379,7 +379,7 @@ public abstract class FilterBuilders {
      * @param name  The shape field name
      * @param shape Shape to use in the filter
      */
-    public static GeoShapeFilterBuilder geoIntersectionFilter(String name, Shape shape) {
+    public static GeoShapeFilterBuilder geoIntersectionFilter(String name, GeoShapeBuilder shape) {
         return geoShapeFilter(name, shape, ShapeRelation.INTERSECTS);
     }
 
@@ -393,7 +393,7 @@ public abstract class FilterBuilders {
      * @param name  The shape field name
      * @param shape Shape to use in the filter
      */
-    public static GeoShapeFilterBuilder geoWithinFilter(String name, Shape shape) {
+    public static GeoShapeFilterBuilder geoWithinFilter(String name, GeoShapeBuilder shape) {
         return geoShapeFilter(name, shape, ShapeRelation.WITHIN);
     }
 
@@ -407,7 +407,7 @@ public abstract class FilterBuilders {
      * @param name  The shape field name
      * @param shape Shape to use in the filter
      */
-    public static GeoShapeFilterBuilder geoDisjointFilter(String name, Shape shape) {
+    public static GeoShapeFilterBuilder geoDisjointFilter(String name, GeoShapeBuilder shape) {
         return geoShapeFilter(name, shape, ShapeRelation.DISJOINT);
     }
 

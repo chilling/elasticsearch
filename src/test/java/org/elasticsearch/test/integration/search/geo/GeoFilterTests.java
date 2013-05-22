@@ -36,6 +36,11 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.zip.GZIPInputStream;
 
+import org.apache.lucene.spatial.prefix.RecursivePrefixTreeStrategy;
+import org.apache.lucene.spatial.prefix.tree.GeohashPrefixTree;
+import org.apache.lucene.spatial.query.SpatialArgs;
+import org.apache.lucene.spatial.query.SpatialOperation;
+import org.apache.lucene.spatial.query.UnsupportedSpatialOperation;
 import org.elasticsearch.action.admin.indices.create.CreateIndexRequestBuilder;
 import org.elasticsearch.action.bulk.BulkItemResponse;
 import org.elasticsearch.action.bulk.BulkResponse;
@@ -45,24 +50,15 @@ import org.elasticsearch.common.Priority;
 import org.elasticsearch.common.bytes.BytesReference;
 import org.elasticsearch.common.geo.GeoPoint;
 import org.elasticsearch.common.geo.GeoUtils;
-import org.elasticsearch.common.geo.ShapeBuilder;
-import org.elasticsearch.common.geo.ShapeBuilder.MultiPolygonBuilder;
-import org.elasticsearch.common.geo.ShapeBuilder.PolygonBuilder;
+import org.elasticsearch.common.geo.builders.GeoShapeBuilder;
+import org.elasticsearch.common.geo.builders.PolygonBuilder;
 import org.elasticsearch.common.io.Streams;
-import org.elasticsearch.common.xcontent.XContentBuilder;
+import org.elasticsearch.common.xcontent.ToXContent;
 import org.elasticsearch.common.xcontent.XContentFactory;
+import org.elasticsearch.common.xcontent.json.JsonXContent;
 import org.elasticsearch.index.query.FilterBuilders;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.test.integration.AbstractNodesTests;
-
-import org.apache.lucene.spatial.prefix.RecursivePrefixTreeStrategy;
-import org.apache.lucene.spatial.prefix.tree.GeohashPrefixTree;
-import org.apache.lucene.spatial.prefix.tree.Node;
-import org.apache.lucene.spatial.prefix.tree.QuadPrefixTree;
-import org.apache.lucene.spatial.query.SpatialArgs;
-import org.apache.lucene.spatial.query.SpatialOperation;
-import org.apache.lucene.spatial.query.UnsupportedSpatialOperation;
-
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
@@ -70,8 +66,6 @@ import org.testng.annotations.Test;
 import com.spatial4j.core.context.SpatialContext;
 import com.spatial4j.core.distance.DistanceUtils;
 import com.spatial4j.core.exception.InvalidShapeException;
-import com.spatial4j.core.shape.Point;
-import com.spatial4j.core.shape.Rectangle;
 import com.spatial4j.core.shape.Shape;
 
 /**
@@ -128,36 +122,36 @@ public class GeoFilterTests extends AbstractNodesTests {
 
         try {
             // self intersection polygon
-            ShapeBuilder.newPolygon()
+            GeoShapeBuilder.newPolygon()
                 .point(-10, -10)
                 .point(10, 10)
                 .point(-10, 10)
                 .point(10, -10)
-                .close().build();
+                .close().buildShape();
             assert false : "Self intersection not detected";
         } catch (InvalidShapeException e) {}
 
         // polygon with hole
-        ShapeBuilder.newPolygon()
+        GeoShapeBuilder.newPolygon()
             .point(-10, -10).point(-10, 10).point(10, 10).point(10, -10)
             .hole()
                 .point(-5, -5).point(-5, 5).point(5, 5).point(5, -5)
-            .close().close().build();
+            .close().close().buildShape();
 
         try {
             // polygon with overlapping hole
-            ShapeBuilder.newPolygon()
+            GeoShapeBuilder.newPolygon()
                 .point(-10, -10).point(-10, 10).point(10, 10).point(10, -10)
                 .hole()
                     .point(-5, -5).point(-5, 11).point(5, 11).point(5, -5)
-                .close().close().build();
+                .close().close().buildShape();
 
             assert false : "Self intersection not detected";
         } catch (InvalidShapeException e) {}
 
         try {
             // polygon with intersection holes
-            ShapeBuilder.newPolygon()
+            GeoShapeBuilder.newPolygon()
                 .point(-10, -10).point(-10, 10).point(10, 10).point(10, -10)
                 .hole()
                     .point(-5, -5).point(-5, 5).point(5, 5).point(5, -5)
@@ -165,13 +159,13 @@ public class GeoFilterTests extends AbstractNodesTests {
                 .hole()
                     .point(-5, -6).point(5, -6).point(5, -4).point(-5, -4)
                 .close()
-            .close().build();
+            .close().buildShape();
             assert false : "Intersection of holes not detected";
         } catch (InvalidShapeException e) {}
 
         try {
             // Common line in polygon
-            ShapeBuilder.newPolygon()
+            GeoShapeBuilder.newPolygon()
                 .point(-10, -10)
                 .point(-10, 10)
                 .point(-5, 10)
@@ -179,7 +173,7 @@ public class GeoFilterTests extends AbstractNodesTests {
                 .point(-5, 20)
                 .point(10, 20)
                 .point(10, -10)
-                .close().build();
+                .close().buildShape();
             assert false : "Self intersection not detected";
         } catch (InvalidShapeException e) {}
 
@@ -200,7 +194,7 @@ public class GeoFilterTests extends AbstractNodesTests {
 //        } catch (InvalidShapeException e) {}
 
         // Multipolygon: polygon with hole and polygon within the whole
-        ShapeBuilder.newMultiPolygon()
+        GeoShapeBuilder.newMultiPolygon()
             .polygon()
                 .point(-10, -10).point(-10, 10).point(10, 10).point(10, -10)
                 .hole()
@@ -210,7 +204,7 @@ public class GeoFilterTests extends AbstractNodesTests {
             .polygon()
                 .point(-4, -4).point(-4, 4).point(4, 4).point(4, -4)
             .close()
-            .build();
+            .buildShape();
 
 // Not supported
 //        try {
@@ -261,7 +255,7 @@ public class GeoFilterTests extends AbstractNodesTests {
         // Create a multipolygon with two polygons. The first is an rectangle of size 10x10
         // with a hole of size 5x5 equidistant from all sides. This hole in turn contains
         // the second polygon of size 4x4 equidistant from all sites
-        MultiPolygonBuilder polygon = ShapeBuilder.newMultiPolygon()
+        GeoShapeBuilder polygon = GeoShapeBuilder.newMultiPolygon()
         .polygon()
             .point(-10, -10).point(-10, 10).point(10, 10).point(10, -10)
             .hole()
@@ -272,14 +266,14 @@ public class GeoFilterTests extends AbstractNodesTests {
             .point(-4, -4).point(-4, 4).point(4, 4).point(4, -4)
         .close();
 
-        BytesReference data = polygon.toXContent("area", jsonBuilder().startObject()).endObject().bytes();
+        BytesReference data = jsonBuilder().field("area", polygon).bytes();
         client.prepareIndex("shapes", "polygon", "1").setSource(data).execute().actionGet();
         client.admin().indices().prepareRefresh().execute().actionGet();
 
         // Point in polygon
         SearchResponse result = client.prepareSearch()
                 .setQuery(matchAllQuery())
-                .setFilter(FilterBuilders.geoIntersectionFilter("area", ShapeBuilder.newPoint(3, 3)))
+                .setFilter(FilterBuilders.geoIntersectionFilter("area", GeoShapeBuilder.newPoint(3, 3)))
                 .execute().actionGet();
         assertThat(result.getHits().getTotalHits(), equalTo(1L));
         assertThat(result.getHits().getAt(0).getId(), equalTo("1"));
@@ -287,7 +281,7 @@ public class GeoFilterTests extends AbstractNodesTests {
         // Point in polygon hole
         result = client.prepareSearch()
                 .setQuery(matchAllQuery())
-                .setFilter(FilterBuilders.geoIntersectionFilter("area", ShapeBuilder.newPoint(4.5, 4.5)))
+                .setFilter(FilterBuilders.geoIntersectionFilter("area", GeoShapeBuilder.newPoint(4.5, 4.5)))
                 .execute().actionGet();
         assertThat(result.getHits().getTotalHits(), equalTo(0L));
 
@@ -298,7 +292,7 @@ public class GeoFilterTests extends AbstractNodesTests {
         // Point on polygon border
         result = client.prepareSearch()
                 .setQuery(matchAllQuery())
-                .setFilter(FilterBuilders.geoIntersectionFilter("area", ShapeBuilder.newPoint(10.0, 5.0)))
+                .setFilter(FilterBuilders.geoIntersectionFilter("area", GeoShapeBuilder.newPoint(10.0, 5.0)))
                 .execute().actionGet();
         assertThat(result.getHits().getTotalHits(), equalTo(1L));
         assertThat(result.getHits().getAt(0).getId(), equalTo("1"));
@@ -306,7 +300,7 @@ public class GeoFilterTests extends AbstractNodesTests {
         // Point on hole border
         result = client.prepareSearch()
                 .setQuery(matchAllQuery())
-                .setFilter(FilterBuilders.geoIntersectionFilter("area", ShapeBuilder.newPoint(5.0, 2.0)))
+                .setFilter(FilterBuilders.geoIntersectionFilter("area", GeoShapeBuilder.newPoint(5.0, 2.0)))
                 .execute().actionGet();
         assertThat(result.getHits().getTotalHits(), equalTo(1L));
         assertThat(result.getHits().getAt(0).getId(), equalTo("1"));
@@ -315,41 +309,42 @@ public class GeoFilterTests extends AbstractNodesTests {
             // Point not in polygon
             result = client.prepareSearch()
                     .setQuery(matchAllQuery())
-                    .setFilter(FilterBuilders.geoDisjointFilter("area", ShapeBuilder.newPoint(3, 3)))
+                    .setFilter(FilterBuilders.geoDisjointFilter("area", GeoShapeBuilder.newPoint(3, 3)))
                     .execute().actionGet();
             assertThat(result.getHits().getTotalHits(), equalTo(0L));
 
             // Point in polygon hole
             result = client.prepareSearch()
                     .setQuery(matchAllQuery())
-                    .setFilter(FilterBuilders.geoDisjointFilter("area", ShapeBuilder.newPoint(4.5, 4.5)))
+                    .setFilter(FilterBuilders.geoDisjointFilter("area", GeoShapeBuilder.newPoint(4.5, 4.5)))
                     .execute().actionGet();
             assertThat(result.getHits().getTotalHits(), equalTo(1L));
             assertThat(result.getHits().getAt(0).getId(), equalTo("1"));
         }
 
         // Create a polygon that fills the empty area of the polygon defined above
-        PolygonBuilder inverse = ShapeBuilder.newPolygon()
+        PolygonBuilder inverse = GeoShapeBuilder.newPolygon()
             .point(-5, -5).point(-5, 5).point(5, 5).point(5, -5)
             .hole()
                 .point(-4, -4).point(-4, 4).point(4, 4).point(4, -4)
             .close()
         .close();
 
-        data = inverse.toXContent("area", jsonBuilder().startObject()).endObject().bytes();
+        data = inverse.toXContent(JsonXContent.contentBuilder(), ToXContent.EMPTY_PARAMS).bytes();
+        
         client.prepareIndex("shapes", "polygon", "2").setSource(data).execute().actionGet();
         client.admin().indices().prepareRefresh().execute().actionGet();
 
         // re-check point on polygon hole
         result = client.prepareSearch()
                 .setQuery(matchAllQuery())
-                .setFilter(FilterBuilders.geoIntersectionFilter("area", ShapeBuilder.newPoint(4.5, 4.5)))
+                .setFilter(FilterBuilders.geoIntersectionFilter("area", GeoShapeBuilder.newPoint(4.5, 4.5)))
                 .execute().actionGet();
         assertThat(result.getHits().getTotalHits(), equalTo(1L));
         assertThat(result.getHits().getAt(0).getId(), equalTo("2"));
 
         // Create Polygon with hole and common edge
-        PolygonBuilder builder = ShapeBuilder.newPolygon()
+        PolygonBuilder builder = GeoShapeBuilder.newPolygon()
                 .point(-10, -10).point(-10, 10).point(10, 10).point(10, -10)
                 .hole()
                     .point(-5, -5).point(-5, 5).point(10, 5).point(10, -5)
@@ -358,12 +353,12 @@ public class GeoFilterTests extends AbstractNodesTests {
 
         if(withinSupport) {
             // Polygon WithIn Polygon
-            builder = ShapeBuilder.newPolygon()
+            builder = GeoShapeBuilder.newPolygon()
                     .point(-30, -30).point(-30, 30).point(30, 30).point(30, -30).close();
 
             result = client.prepareSearch()
                     .setQuery(matchAllQuery())
-                    .setFilter(FilterBuilders.geoWithinFilter("area", builder.build()))
+                    .setFilter(FilterBuilders.geoWithinFilter("area", builder))
                     .execute().actionGet();
             assertThat(result.getHits().getTotalHits(), equalTo(2L));
         }

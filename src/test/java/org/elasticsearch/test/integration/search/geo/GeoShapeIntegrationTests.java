@@ -19,24 +19,24 @@
 
 package org.elasticsearch.test.integration.search.geo;
 
-import com.spatial4j.core.shape.Shape;
+import static org.elasticsearch.common.xcontent.XContentFactory.jsonBuilder;
+import static org.elasticsearch.index.query.FilterBuilders.geoIntersectionFilter;
+import static org.elasticsearch.index.query.QueryBuilders.filteredQuery;
+import static org.elasticsearch.index.query.QueryBuilders.geoShapeQuery;
+import static org.elasticsearch.index.query.QueryBuilders.matchAllQuery;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
+
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.common.Priority;
-import org.elasticsearch.common.geo.GeoJSONShapeSerializer;
+import org.elasticsearch.common.geo.builders.GeoShapeBuilder;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.common.xcontent.XContentFactory;
 import org.elasticsearch.test.integration.AbstractNodesTests;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
-
-import static org.elasticsearch.common.geo.ShapeBuilder.newRectangle;
-import static org.elasticsearch.common.xcontent.XContentFactory.jsonBuilder;
-import static org.elasticsearch.index.query.FilterBuilders.*;
-import static org.elasticsearch.index.query.QueryBuilders.*;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.equalTo;
 
 public class GeoShapeIntegrationTests extends AbstractNodesTests {
 
@@ -90,7 +90,7 @@ public class GeoShapeIntegrationTests extends AbstractNodesTests {
 
         client.admin().indices().prepareRefresh().execute().actionGet();
 
-        Shape shape = newRectangle().topLeft(-45, 45).bottomRight(45, -45).build();
+        GeoShapeBuilder shape = GeoShapeBuilder.newEnvelope().topLeft(-45, 45).bottomRight(45, -45);
 
         SearchResponse searchResponse = client.prepareSearch()
                 .setQuery(filteredQuery(matchAllQuery(),
@@ -138,7 +138,7 @@ public class GeoShapeIntegrationTests extends AbstractNodesTests {
 
         client.admin().indices().prepareRefresh().execute().actionGet();
 
-        Shape query = newRectangle().topLeft(-122.88, 48.62).bottomRight(-122.82, 48.54).build();
+        GeoShapeBuilder query = GeoShapeBuilder.newEnvelope().topLeft(-122.88, 48.62).bottomRight(-122.82, 48.54);
 
         // This search would fail if both geoshape indexing and geoshape filtering
         // used the bottom-level optimization in SpatialPrefixTree#recursiveGetNodes.
@@ -175,11 +175,8 @@ public class GeoShapeIntegrationTests extends AbstractNodesTests {
 
         client.admin().indices().prepareRefresh("test").execute().actionGet();
 
-        Shape shape = newRectangle().topLeft(-45, 45).bottomRight(45, -45).build();
-        XContentBuilder shapeContent = jsonBuilder().startObject()
-                .startObject("shape");
-        GeoJSONShapeSerializer.serialize(shape, shapeContent);
-        shapeContent.endObject();
+        GeoShapeBuilder shape = GeoShapeBuilder.newEnvelope().topLeft(-45, 45).bottomRight(45, -45);
+        XContentBuilder shapeContent = jsonBuilder().field("shape", shape);
 
         client.prepareIndex("shapes", "shape_type", "Big_Rectangle").setSource(shapeContent).execute().actionGet();
         client.admin().indices().prepareRefresh().execute().actionGet();

@@ -22,6 +22,8 @@ import com.vividsolutions.jts.geom.GeometryFactory;
 public abstract class GeoShapeBuilder implements ToXContent {
 
     protected static final double DATELINE = 180;
+    protected static final GeometryFactory FACTORY = new GeometryFactory();
+    
     protected final boolean fixDateline = true;
     
     protected GeoShapeBuilder() {
@@ -79,7 +81,7 @@ public abstract class GeoShapeBuilder implements ToXContent {
         
     }
     
-    public abstract Shape buildShape(GeometryFactory factory, boolean fixDateline);
+    public abstract Shape buildShape();
     
     /**
      * Recursive method which parses the arrays of coordinates used to define Shapes
@@ -183,7 +185,7 @@ public abstract class GeoShapeBuilder implements ToXContent {
     }
     
     protected static EnvelopeBuilder parseEnvelope(CoordinateNode coordinates) {
-        return newEnvelope().northWest(coordinates.children.get(0).coordinate).southEast(coordinates.children.get(1).coordinate);
+        return newEnvelope().topLeft(coordinates.children.get(0).coordinate).bottomRight(coordinates.children.get(1).coordinate);
     }
 
     protected static MultiPointBuilder parseMultiPoint(CoordinateNode coordinates) {

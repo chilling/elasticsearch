@@ -5,33 +5,32 @@ import java.io.IOException;
 import org.elasticsearch.common.geo.GeoShapeConstants;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 
-import com.spatial4j.core.shape.Shape;
+import com.spatial4j.core.shape.Rectangle;
 import com.vividsolutions.jts.geom.Coordinate;
-import com.vividsolutions.jts.geom.GeometryFactory;
 
 public class EnvelopeBuilder extends GeoShapeBuilder {
 
     public static final String TYPE = "envelope"; 
 
-    protected Coordinate northWest;
-    protected Coordinate southEast;
+    protected Coordinate topLeft;
+    protected Coordinate bottomRight;
     
-    public EnvelopeBuilder northWest(Coordinate northWest) {
-        this.northWest = northWest;
+    public EnvelopeBuilder topLeft(Coordinate topLeft) {
+        this.topLeft = topLeft;
         return this;
     }
     
-    public EnvelopeBuilder northWest(double longitude, double latitude) {
-        return northWest(coordinate(longitude, latitude));
+    public EnvelopeBuilder topLeft(double longitude, double latitude) {
+        return topLeft(coordinate(longitude, latitude));
     }
 
-    public EnvelopeBuilder southEast(Coordinate southEast) {
-        this.southEast = southEast;
+    public EnvelopeBuilder bottomRight(Coordinate bottomRight) {
+        this.bottomRight = bottomRight;
         return this;
     }
 
-    public EnvelopeBuilder southEast(double longitude, double latitude) {
-        return southEast(coordinate(longitude, latitude));
+    public EnvelopeBuilder bottomRight(double longitude, double latitude) {
+        return bottomRight(coordinate(longitude, latitude));
     }
     
     @Override
@@ -39,17 +38,17 @@ public class EnvelopeBuilder extends GeoShapeBuilder {
         builder.startObject();
         builder.field(FIELD_TYPE, TYPE);
         builder.startArray(FIELD_COORDINATES);
-        toXContent(builder, northWest);
-        toXContent(builder, southEast);
+        toXContent(builder, topLeft);
+        toXContent(builder, bottomRight);
         builder.endArray();
         return builder.endObject();
     }
 
     @Override
-    public Shape buildShape(GeometryFactory factory, boolean fixDateline) {
+    public Rectangle buildShape() {
         return GeoShapeConstants.SPATIAL_CONTEXT.makeRectangle(
-                northWest.x, southEast.x,
-                northWest.y, southEast.y);
+                topLeft.x, bottomRight.x,
+                topLeft.y, bottomRight.y);
     }
     
 }

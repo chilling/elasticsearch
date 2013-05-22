@@ -5,9 +5,8 @@ import java.io.IOException;
 import org.elasticsearch.common.geo.GeoShapeConstants;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 
-import com.spatial4j.core.shape.Shape;
+import com.spatial4j.core.shape.Point;
 import com.vividsolutions.jts.geom.Coordinate;
-import com.vividsolutions.jts.geom.GeometryFactory;
 
 public class PointBuilder extends GeoShapeBuilder {
 
@@ -38,7 +37,7 @@ public class PointBuilder extends GeoShapeBuilder {
     }
     
     @Override
-    public Shape buildShape(GeometryFactory factory, boolean fixDateline) {
+    public Point buildShape() {
         return GeoShapeConstants.SPATIAL_CONTEXT.makePoint(coordinate.x, coordinate.y);
     }
     

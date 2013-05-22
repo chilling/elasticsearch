@@ -9,23 +9,19 @@ import java.awt.event.MouseListener;
 import java.awt.event.MouseMotionListener;
 import java.awt.event.MouseWheelEvent;
 import java.awt.event.MouseWheelListener;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 
 import javax.swing.JFrame;
 
 import org.elasticsearch.common.geo.builders.GeoShapeBuilder;
-import org.elasticsearch.common.xcontent.XContentBuilder;
-import org.elasticsearch.common.xcontent.ToXContent.Params;
 
 import com.spatial4j.core.shape.Shape;
+import com.spatial4j.core.shape.jts.JtsGeometry;
 import com.vividsolutions.jts.geom.Coordinate;
 import com.vividsolutions.jts.geom.Geometry;
 import com.vividsolutions.jts.geom.GeometryCollection;
-import com.vividsolutions.jts.geom.GeometryFactory;
 import com.vividsolutions.jts.geom.LineString;
-import com.vividsolutions.jts.geom.MultiPolygon;
 import com.vividsolutions.jts.geom.Polygon;
 
 public class TestFrame extends JFrame implements ComponentListener, MouseListener, MouseWheelListener, MouseMotionListener {
@@ -137,6 +133,11 @@ public class TestFrame extends JFrame implements ComponentListener, MouseListene
         return geometires;
     }
     
+    public void drawShape(Graphics g, Shape shape, boolean info) {
+        if (shape instanceof JtsGeometry)
+            drawGeometry(g, ((JtsGeometry) shape).getGeom(), info);
+    }
+    
     public void drawGeometry(Graphics g, Geometry geometry, boolean info) {
         if(geometry instanceof GeometryCollection) {
             GeometryCollection collection = (GeometryCollection) geometry;
@@ -217,7 +218,7 @@ public class TestFrame extends JFrame implements ComponentListener, MouseListene
             drawGeometry(g, geometry, false);
         }
 
-        drawGeometry(g, polygons[currentPolygon].build(new GeometryFactory()), true);
+        drawShape(g, polygons[currentPolygon].buildShape(), true);
 
         
 //        if(decompose) {

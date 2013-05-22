@@ -19,6 +19,8 @@
 
 package org.elasticsearch.index.query;
 
+import java.io.IOException;
+
 import org.apache.lucene.search.Query;
 import org.apache.lucene.spatial.prefix.PrefixTreeStrategy;
 import org.apache.lucene.spatial.query.SpatialArgs;
@@ -26,9 +28,8 @@ import org.apache.lucene.spatial.query.SpatialOperation;
 import org.elasticsearch.ElasticSearchIllegalArgumentException;
 import org.elasticsearch.common.Nullable;
 import org.elasticsearch.common.Strings;
-import org.elasticsearch.common.geo.GeoJSONShapeParser;
 import org.elasticsearch.common.geo.ShapeRelation;
-import org.elasticsearch.common.geo.UnparsedGeometry;
+import org.elasticsearch.common.geo.builders.GeoShapeBuilder;
 import org.elasticsearch.common.inject.Inject;
 import org.elasticsearch.common.xcontent.XContentParser;
 import org.elasticsearch.index.mapper.FieldMapper;
@@ -36,7 +37,7 @@ import org.elasticsearch.index.mapper.MapperService;
 import org.elasticsearch.index.mapper.geo.GeoShapeFieldMapper;
 import org.elasticsearch.index.search.shape.ShapeFetchService;
 
-import java.io.IOException;
+import com.spatial4j.core.shape.Shape;
 
 public class GeoShapeQueryParser implements QueryParser {
 
@@ -61,7 +62,7 @@ public class GeoShapeQueryParser implements QueryParser {
         String fieldName = null;
         ShapeRelation shapeRelation = ShapeRelation.INTERSECTS;
         String strategyName = null;
-        UnparsedGeometry shape = null;
+        GeoShapeBuilder shape = null;
 
         String id = null;
         String type = null;
@@ -83,7 +84,7 @@ public class GeoShapeQueryParser implements QueryParser {
                         currentFieldName = parser.currentName();
                         token = parser.nextToken();
                         if ("shape".equals(currentFieldName)) {
-                            shape = GeoJSONShapeParser.parse(parser);
+                            shape = GeoShapeBuilder.parse(parser);
                         } else if ("strategy".equals(currentFieldName)) {
                             strategyName = parser.text();
                         } else if ("relation".equals(currentFieldName)) {
@@ -149,7 +150,7 @@ public class GeoShapeQueryParser implements QueryParser {
         if (strategyName != null) {
             strategy = shapeFieldMapper.resolveStrategy(strategyName);
         }
-        Query query = strategy.makeQuery(getArgs(shape, shapeRelation));
+        Query query = strategy.makeQuery(getArgs(shape.buildShape(), shapeRelation));
         query.setBoost(boost);
         return query;
     }
@@ -159,14 +160,14 @@ public class GeoShapeQueryParser implements QueryParser {
         this.fetchService = fetchService;
     }
     
-    public static SpatialArgs getArgs(UnparsedGeometry shape, ShapeRelation relation) {
+    public static SpatialArgs getArgs(Shape shape, ShapeRelation relation) {
         switch(relation) {
         case DISJOINT:
-            return new SpatialArgs(SpatialOperation.IsDisjointTo, shape.build(true));
+            return new SpatialArgs(SpatialOperation.IsDisjointTo, shape);
         case INTERSECTS:
-            return new SpatialArgs(SpatialOperation.Intersects, shape.build(true));
+            return new SpatialArgs(SpatialOperation.Intersects, shape);
         case WITHIN:
-            return new SpatialArgs(SpatialOperation.IsWithin, shape.build(true));
+            return new SpatialArgs(SpatialOperation.IsWithin, shape);
         default:
             throw new ElasticSearchIllegalArgumentException("");
         

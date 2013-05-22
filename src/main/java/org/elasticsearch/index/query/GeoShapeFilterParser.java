@@ -19,11 +19,14 @@
 
 package org.elasticsearch.index.query;
 
-import com.spatial4j.core.shape.Shape;
+import static org.elasticsearch.index.query.support.QueryParsers.wrapSmartNameFilter;
+
+import java.io.IOException;
+
 import org.apache.lucene.search.Filter;
 import org.apache.lucene.spatial.prefix.PrefixTreeStrategy;
-import org.elasticsearch.common.geo.GeoJSONShapeParser;
 import org.elasticsearch.common.geo.ShapeRelation;
+import org.elasticsearch.common.geo.builders.GeoShapeBuilder;
 import org.elasticsearch.common.inject.Inject;
 import org.elasticsearch.common.inject.internal.Nullable;
 import org.elasticsearch.common.xcontent.XContentParser;
@@ -33,9 +36,7 @@ import org.elasticsearch.index.mapper.MapperService;
 import org.elasticsearch.index.mapper.geo.GeoShapeFieldMapper;
 import org.elasticsearch.index.search.shape.ShapeFetchService;
 
-import java.io.IOException;
-
-import static org.elasticsearch.index.query.support.QueryParsers.wrapSmartNameFilter;
+import com.spatial4j.core.shape.Shape;
 
 /**
  * {@link FilterParser} for filtering Documents based on {@link Shape}s.
@@ -80,7 +81,7 @@ public class GeoShapeFilterParser implements FilterParser {
         String fieldName = null;
         ShapeRelation shapeRelation = ShapeRelation.INTERSECTS;
         String strategyName = null;
-        Shape shape = null;
+        GeoShapeBuilder shape = null;
         boolean cache = false;
         CacheKeyFilter.Key cacheKey = null;
         String filterName = null;
@@ -105,7 +106,7 @@ public class GeoShapeFilterParser implements FilterParser {
 
                         token = parser.nextToken();
                         if ("shape".equals(currentFieldName)) {
-                            shape = GeoJSONShapeParser.parse(parser);
+                            shape = GeoShapeBuilder.parse(parser);
                         } else if ("relation".equals(currentFieldName)) {
                             shapeRelation = ShapeRelation.getRelationByName(parser.text());
                             if (shapeRelation == null) {
@@ -175,7 +176,7 @@ public class GeoShapeFilterParser implements FilterParser {
         if (strategyName != null) {
             strategy = shapeFieldMapper.resolveStrategy(strategyName);
         }
-        Filter filter = strategy.makeFilter(GeoShapeQueryParser.getArgs(shape, shapeRelation));
+        Filter filter = strategy.makeFilter(GeoShapeQueryParser.getArgs(shape.buildShape(), shapeRelation));
 
         if (cache) {
             filter = parseContext.cacheFilter(filter, cacheKey);

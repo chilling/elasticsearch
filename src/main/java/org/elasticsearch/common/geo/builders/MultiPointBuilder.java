@@ -9,7 +9,6 @@ import org.elasticsearch.common.xcontent.XContentBuilder;
 import com.spatial4j.core.shape.Shape;
 import com.spatial4j.core.shape.jts.JtsGeometry;
 import com.vividsolutions.jts.geom.Coordinate;
-import com.vividsolutions.jts.geom.GeometryFactory;
 import com.vividsolutions.jts.geom.MultiPoint;
 
 public class MultiPointBuilder extends PointCollection {
@@ -54,8 +53,8 @@ public class MultiPointBuilder extends PointCollection {
     }
 
     @Override
-    public Shape buildShape(GeometryFactory factory, boolean fixDateline) {
-        MultiPoint geometry = factory.createMultiPoint(points.toArray(new Coordinate[points.size()]));
+    public Shape buildShape() {
+        MultiPoint geometry = FACTORY.createMultiPoint(points.toArray(new Coordinate[points.size()]));
         return new JtsGeometry(geometry, GeoShapeConstants.SPATIAL_CONTEXT, true);
     }
     

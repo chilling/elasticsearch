@@ -21,6 +21,7 @@ package org.elasticsearch.index.query;
 
 import com.spatial4j.core.shape.Shape;
 import org.elasticsearch.common.Nullable;
+import org.elasticsearch.common.geo.builders.GeoShapeBuilder;
 
 /**
  * A static factory for simple "import static" usage.
@@ -750,7 +751,7 @@ public abstract class QueryBuilders {
      * @param name The shape field name
      * @param shape Shape to use in the Query
      */
-    public static GeoShapeQueryBuilder geoShapeQuery(String name, Shape shape) {
+    public static GeoShapeQueryBuilder geoShapeQuery(String name, GeoShapeBuilder shape) {
         return new GeoShapeQueryBuilder(name, shape);
     }
 

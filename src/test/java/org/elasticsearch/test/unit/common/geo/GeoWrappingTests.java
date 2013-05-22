@@ -30,9 +30,7 @@ import java.util.TreeMap;
 import org.elasticsearch.ElasticSearchIllegalArgumentException;
 import org.elasticsearch.action.admin.indices.create.CreateIndexResponse;
 import org.elasticsearch.client.Client;
-import org.elasticsearch.common.geo.GeoJSONShapeParser;
 import org.elasticsearch.common.geo.GeoShapeConstants;
-import org.elasticsearch.common.geo.GeometryBuilder;
 import org.elasticsearch.common.geo.TestFrame;
 import org.elasticsearch.common.geo.builders.CircleBuilder;
 import org.elasticsearch.common.geo.builders.EnvelopeBuilder;
@@ -52,40 +50,10 @@ import com.spatial4j.core.shape.jts.JtsGeometry;
 import com.vividsolutions.jts.geom.Coordinate;
 import com.vividsolutions.jts.geom.Geometry;
 import com.vividsolutions.jts.geom.GeometryFactory;
+import com.vividsolutions.jts.geom.MultiPolygon;
 
 public class GeoWrappingTests {
 
-    public static void main(String[] args) throws IOException {
-        
-        XContentBuilder builder = JsonXContent.contentBuilder();
-
-        CircleBuilder circle = GeoShapeBuilder.newCircleBuilder().center(10, 20).radius(10, "m");
-        EnvelopeBuilder envelope = GeoShapeBuilder.newEnvelope().northWest(10, 20).southEast(20, 30);
-        
-        builder.startObject();
-        builder.field("aCricle", circle);
-        builder.field("anEnvelope", envelope);
-        builder.endObject();
-        
-        System.out.println(builder.prettyPrint().string());
-        
-        XContentParser parser = JsonXContent.jsonXContent.createParser(builder.string());
-        if(parser.nextToken() == Token.START_OBJECT) {
-            
-            while(parser.nextToken() != Token.END_OBJECT) {
-                if(parser.currentToken() == Token.FIELD_NAME) {
-                    System.out.println("Field: " + parser.text());
-                } else if(parser.currentToken() == Token.START_OBJECT) {
-                    GeoShapeBuilder shape = GeoShapeBuilder.parse(parser);
-                    System.out.println(shape);
-                }
-            }
-        } else {
-            System.out.println("Not an Object");
-        }
-        
-    }
-    
     @Test
     public void wrappingTest() throws IOException {
         XContentBuilder mapping = JsonXContent.contentBuilder()
@@ -115,31 +83,31 @@ public class GeoWrappingTests {
         System.out.println("Mapping + " + mapping.prettyPrint().string());
 
         
-        FileInputStream in = new FileInputStream("/home/schilling/Desktop/countries.geo.json.1");
-
-//        StringBuilder sb = new StringBuilder();
-//        int c;
-//        while((c=in.read())>=0) {
-//            sb.append((char)c);
+//        FileInputStream in = new FileInputStream("/home/schilling/Desktop/countries.geo.json.1");
+//
+////        StringBuilder sb = new StringBuilder();
+////        int c;
+////        while((c=in.read())>=0) {
+////            sb.append((char)c);
+////        }
+////        System.out.println(sb.toString());
+//
+//        XContentParser parser = JsonXContent.jsonXContent.createParser(in);
+//
+//        if(parser.nextToken() == Token.START_OBJECT) {
+//            TestFrame testFrame = new TestFrame();
+//            parseObject(parser, testFrame.geomeries());
+//
+//            
+//            try {
+//                Thread.sleep(200000);
+//            } catch (InterruptedException e) {
+//                // TODO: handle exception
+//            }
 //        }
-//        System.out.println(sb.toString());
-
-        XContentParser parser = JsonXContent.jsonXContent.createParser(in);
-
-        if(parser.nextToken() == Token.START_OBJECT) {
-            TestFrame testFrame = new TestFrame();
-            parseObject(parser, testFrame.geomeries());
-
-            
-            try {
-                Thread.sleep(200000);
-            } catch (InterruptedException e) {
-                // TODO: handle exception
-            }
-        }
-        
-        if(true) return;
-        
+//        
+//        if(true) return;
+//        
         
 
         
@@ -181,18 +149,6 @@ public class GeoWrappingTests {
         node2.close();
     }
     
-    public static Geometry convert(String type, Object coordinates) {
-        if("polygon".equals(type.toLowerCase(Locale.getDefault()))) {
-            Coordinate[][] points = (Coordinate[][]) coordinates;
-            return GeometryBuilder.polygon(new GeometryFactory(), points);
-        } else if("multipolygon".equals(type.toLowerCase(Locale.getDefault()))) {
-            Coordinate[][][] points = (Coordinate[][][]) coordinates;
-            return GeometryBuilder.multipolygon(new GeometryFactory(), points);
-        } else {
-            throw new ElasticSearchIllegalArgumentException("unknown type '"+type+"'");
-        }
-    }
-    
     public static Shape shape(Geometry geometry) {
         return new JtsGeometry(
                 geometry,
@@ -200,34 +156,8 @@ public class GeoWrappingTests {
                 true);
     }
     
-    public static Shape parseGeometry(XContentParser parser, Collection<Geometry> geometries) throws IOException {
-//        String type=null;
-//        Object coordinates = null;
-//        for(Token token = parser.nextToken(); token != Token.END_OBJECT; token = parser.nextToken()) {
-//            System.out.println("\t" + parser.currentName());
-//            if(token == Token.FIELD_NAME) {
-//                token = parser.nextToken();
-//                if(parser.currentName().equals("type")) {
-//                    type = parser.text();
-//                } else if(parser.currentName().toLowerCase(Locale.getDefault()).equals("coordinates")) {
-//                    System.out.println("==========================");
-//                    coordinates = parseArray(parser, geometries);
-//                    
-//                    System.out.println(coordinates);
-//                    System.out.println("==========================");
-//                    
-//                } else if(token == Token.START_OBJECT) {
-//                    parseObject(parser, geometries);
-//                } else if(token == Token.START_ARRAY) {
-//                    parseArray(parser, geometries);
-//                }
-//            }
-//        }
-//        
-        
-        //return convert(type, coordinates);
-        
-        return GeoJSONShapeParser.parse(parser);
+    public static GeoShapeBuilder parseGeometry(XContentParser parser, Collection<Geometry> geometries) throws IOException {
+        return GeoShapeBuilder.parse(parser);
     }
     
     public static Map<String, Object> parseObject(XContentParser parser, Collection<Geometry> geometries) throws IOException {

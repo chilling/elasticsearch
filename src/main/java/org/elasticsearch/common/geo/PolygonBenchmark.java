@@ -7,15 +7,14 @@ import org.elasticsearch.action.admin.indices.exists.indices.IndicesExistsRespon
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.common.bytes.BytesReference;
-import org.elasticsearch.common.geo.ShapeBuilder.PolygonBuilder;
+import org.elasticsearch.common.geo.builders.GeoShapeBuilder;
+import org.elasticsearch.common.geo.builders.PolygonBuilder;
 import org.elasticsearch.common.xcontent.json.JsonXContent;
 import org.elasticsearch.index.query.GeoShapeQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.node.Node;
 import org.elasticsearch.node.NodeBuilder;
 import org.testng.annotations.Test;
-
-import com.spatial4j.core.shape.Shape;
 
 public class PolygonBenchmark {
 
@@ -115,7 +114,7 @@ public class PolygonBenchmark {
     public GeoShapeQueryBuilder circle(String name, int points) {
         double outerRadius = 40;
         
-        PolygonBuilder polygon = ShapeBuilder.newPolygon();
+        PolygonBuilder polygon = GeoShapeBuilder.newPolygon();
         
         for (int i = 0; i < points; i++) {
             double alpha = 2*Math.PI * (1.0f*i) / (1.0f * points);
@@ -127,9 +126,7 @@ public class PolygonBenchmark {
         
         polygon.close();
 
-        Shape shape = polygon.build();
-        
-        GeoShapeQueryBuilder query = QueryBuilders.geoShapeQuery(name, shape);
+        GeoShapeQueryBuilder query = QueryBuilders.geoShapeQuery(name, polygon);
         
         return query;
     }
@@ -139,7 +136,7 @@ public class PolygonBenchmark {
         double innerRadius = 10;
         double outerRadius = 40;
         
-        PolygonBuilder polygon = ShapeBuilder.newPolygon();
+        PolygonBuilder polygon = GeoShapeBuilder.newPolygon();
         
         for (int i = 0; i < spikes; i++) {
             double alpha = 2*Math.PI * (1.0f*i) / (1.0f * spikes);
@@ -156,9 +153,7 @@ public class PolygonBenchmark {
         
         polygon.close();
 
-        Shape shape = polygon.build();
-        
-        GeoShapeQueryBuilder query = QueryBuilders.geoShapeQuery(name, shape);
+        GeoShapeQueryBuilder query = QueryBuilders.geoShapeQuery(name, polygon);
         
         return query;
     }
