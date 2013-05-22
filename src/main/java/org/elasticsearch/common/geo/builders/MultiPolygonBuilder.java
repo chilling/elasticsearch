@@ -43,7 +43,7 @@ public class MultiPolygonBuilder extends GeoShapeBuilder {
     
     @Override
     public Shape buildShape() {
-        if(fixDateline) {
+        if(wrapdateline) {
             ArrayList<Polygon> polygons = new ArrayList<Polygon>(this.polygons.size());
             for (BasePolygonBuilder<?> polygon : this.polygons) {
                 for(Coordinate[][] part : polygon.coordinates()) {

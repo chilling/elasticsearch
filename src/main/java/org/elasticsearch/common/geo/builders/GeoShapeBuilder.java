@@ -8,6 +8,8 @@ import java.util.List;
 import java.util.Locale;
 
 import org.elasticsearch.ElasticSearchParseException;
+import org.elasticsearch.common.logging.ESLogger;
+import org.elasticsearch.common.logging.ESLoggerFactory;
 import org.elasticsearch.common.unit.DistanceUnit;
 import org.elasticsearch.common.unit.DistanceUnit.Distance;
 import org.elasticsearch.common.xcontent.ToXContent;
@@ -21,10 +23,12 @@ import com.vividsolutions.jts.geom.GeometryFactory;
 
 public abstract class GeoShapeBuilder implements ToXContent {
 
+    protected static final ESLogger logger = ESLoggerFactory.getLogger(GeoShapeBuilder.class.getName());
+    
     protected static final double DATELINE = 180;
     protected static final GeometryFactory FACTORY = new GeometryFactory();
     
-    protected final boolean fixDateline = true;
+    protected final boolean wrapdateline = true;
     
     protected GeoShapeBuilder() {
 

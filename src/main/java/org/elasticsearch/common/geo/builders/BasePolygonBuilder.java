@@ -74,7 +74,7 @@ public abstract class BasePolygonBuilder<E extends BasePolygonBuilder<?>> extend
     
     @Override
     public Shape buildShape() {
-        Geometry geometry = buildGeometry(FACTORY, fixDateline);
+        Geometry geometry = buildGeometry(FACTORY, wrapdateline);
         return new JtsGeometry(geometry, GeoShapeConstants.SPATIAL_CONTEXT, true);
     }
     
@@ -150,7 +150,6 @@ public abstract class BasePolygonBuilder<E extends BasePolygonBuilder<?>> extend
     }
 
     private static int component(final Edge edge, final int id, final ArrayList<Edge> edges) {
-        System.out.print("Search shift...");
         // find a coordinate that is not part of the dateline 
         Edge any = edge;
         while(any.coordinate.x == +DATELINE || any.coordinate.x == -DATELINE) {
@@ -160,16 +159,14 @@ public abstract class BasePolygonBuilder<E extends BasePolygonBuilder<?>> extend
         }
         
         double shift = any.coordinate.x>DATELINE?DATELINE:(any.coordinate.x<-DATELINE?-DATELINE:0);
-        System.out.println("shift: " + shift);
+        logger.debug("shift: {[]}", shift);
 
         // run along the border of the component, collect the
         // edges, shift them according to the dateline and
         // update the component id
         int length = 0;
         Edge current = edge;
-        System.out.print("building Component C"+id+"... ");
         do {
-            System.out.print(current.component + " ");
 
             current.coordinate = shift(current.coordinate, shift); 
             current.component = id;
@@ -180,7 +177,6 @@ public abstract class BasePolygonBuilder<E extends BasePolygonBuilder<?>> extend
             length++;
         } while((current = current.next) != edge);
 
-        System.out.println("done");
         return length;
     }
     
@@ -198,13 +194,15 @@ public abstract class BasePolygonBuilder<E extends BasePolygonBuilder<?>> extend
             result[i] = component.toArray(new Coordinate[component.size()][]);
         }
         
-        for (int i = 0; i < result.length; i++) {
-            System.out.println("Component " + i + ":");
-            for (int j = 0; j < result[i].length; j++) {
-                System.out.println("\t" + Arrays.toString(result[i][j]));
+        if(logger.isDebugEnabled()) {
+            for (int i = 0; i < result.length; i++) {
+                logger.debug("Component {[]}:", i);
+                for (int j = 0; j < result[i].length; j++) {
+                    logger.debug("\t" + Arrays.toString(result[i][j]));
+                }
             }
         }
-
+        
         return result;
     } 
     
@@ -246,7 +244,7 @@ public abstract class BasePolygonBuilder<E extends BasePolygonBuilder<?>> extend
         // polygon edges with a vertical line are calculated. This vertical line
         // is an arbitrary point of the hole. The polygon edge next to this point
         // is part of the polygon the hole belongs to.
-        System.out.println("Holes ("+numHoles+"): " + Arrays.toString(holes));
+        logger.debug("Holes: " + Arrays.toString(holes));
         for (int i = 0; i < numHoles; i++) {
             final Edge current = holes[i];
             final int intersections = intersections(current.coordinate.x, edges);
@@ -254,10 +252,11 @@ public abstract class BasePolygonBuilder<E extends BasePolygonBuilder<?>> extend
             final int index = -(pos+2);
             final int component = -edges[index].component - numHoles - 1;
 
-            System.out.println("\tposition ("+index+") of edge "+current+": " + edges[index]);
-            System.out.println("\tComponent: " + component);
-            System.out.println("\tHole intersections ("+current.coordinate.x+"): " + Arrays.toString(edges));
-            System.out.println();
+            if(logger.isDebugEnabled()) {
+                logger.debug("\tposition ("+index+") of edge "+current+": " + edges[index]);
+                logger.debug("\tComponent: " + component);
+                logger.debug("\tHole intersections ("+current.coordinate.x+"): " + Arrays.toString(edges));
+            }
             
             components.get(component).add(points[i]);
         }

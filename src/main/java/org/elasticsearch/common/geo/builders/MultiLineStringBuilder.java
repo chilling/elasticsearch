@@ -55,7 +55,7 @@ public class MultiLineStringBuilder extends GeoShapeBuilder {
     @Override
     public Shape buildShape() {
         final Geometry geometry;
-        if(fixDateline) {
+        if(wrapdateline) {
             ArrayList<LineString> parts = new ArrayList<LineString>();
             for (LineStringBuilder line : lines) {
                 LineStringBuilder.decompose(FACTORY, line.coordinates(false), parts);

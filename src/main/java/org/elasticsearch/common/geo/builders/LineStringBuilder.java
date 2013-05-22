@@ -65,7 +65,7 @@ public class LineStringBuilder extends PointCollection {
     public Shape buildShape() {
         Coordinate[] coordinates = points.toArray(new Coordinate[points.size()]);
         Geometry geometry;
-        if(fixDateline) {
+        if(wrapdateline) {
             ArrayList<LineString> strings = decompose(FACTORY, coordinates, new ArrayList<LineString>());
 
             if(strings.size() == 1) {
@@ -78,7 +78,7 @@ public class LineStringBuilder extends PointCollection {
         } else {
             geometry = FACTORY.createLineString(coordinates);
         }
-        return new JtsGeometry(geometry, GeoShapeConstants.SPATIAL_CONTEXT, fixDateline);
+        return new JtsGeometry(geometry, GeoShapeConstants.SPATIAL_CONTEXT, wrapdateline);
     }
     
     protected static ArrayList<LineString> decompose(GeometryFactory factory, Coordinate[] coordinates, ArrayList<LineString> strings) {
