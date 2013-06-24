@@ -21,6 +21,7 @@ package org.elasticsearch.index.query;
 
 import com.spatial4j.core.shape.Shape;
 import org.elasticsearch.common.Nullable;
+import org.elasticsearch.common.geo.GeoPoint;
 import org.elasticsearch.common.geo.ShapeRelation;
 
 /**
@@ -369,7 +370,7 @@ public abstract class FilterBuilders {
      * @param geohash The Geohash to filter
      */
     public static GeohashFilter.Builder geoHashFilter(String fieldname, String geohash) {
-        return new GeohashFilter.Builder(fieldname, geohash);
+        return new GeohashFilter.Builder(fieldname, new GeoPoint().resetFromGeoHash(geohash));
     }
 
     /**
@@ -382,7 +383,7 @@ public abstract class FilterBuilders {
      * @param neighbors should the neighbor cell also be filtered
      */
     public static GeohashFilter.Builder geoHashFilter(String fieldname, String geohash, boolean neighbors) {
-        return new GeohashFilter.Builder(fieldname, geohash, neighbors);
+        return new GeohashFilter.Builder(fieldname, new GeoPoint().resetFromGeoHash(geohash), neighbors);
     }
     
     /**
