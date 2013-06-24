@@ -193,7 +193,7 @@ public class GeohashFilter {
                         parser.nextToken();
                         neighbors = parser.booleanValue();
                     } else {
-                        fieldName = parser.text();
+                        fieldName = field;
                         parser.nextToken();
                         point = GeoPoint.parse(parser);
                     }
@@ -220,7 +220,9 @@ public class GeohashFilter {
                 geohash = geohash.substring(0, len);
             }
 
+            
             if (neighbors) {
+                System.out.println(geohash + " " + neighbors + " " + GeoHashUtils.neighbors(geohash));
                 return create(parseContext, geoMapper, geohash, GeoHashUtils.neighbors(geohash));
             } else {
                 return create(parseContext, geoMapper, geohash, null);

@@ -441,11 +441,14 @@ public class GeoFilterTests extends AbstractSharedClusterTest {
 
     @Test
     public void testGeoHashFilter() throws IOException {
-        String geohash = randomhash(12);
-        List<String> neighbors = GeoHashUtils.neighbors(geohash);
-
+        String geohash = randomhash(3);
         logger.info("Testing geohash boundingbox filter for [{}]", geohash);
+
+        List<String> neighbors = GeoHashUtils.neighbors(geohash);
+        List<String> parentNeighbors = GeoHashUtils.neighbors(geohash.substring(0, geohash.length() - 1));
+       
         logger.info("Neighbors {}", neighbors);
+        logger.info("Parent Neighbors {}", parentNeighbors);
 
         String mapping = XContentFactory.jsonBuilder()
                 .startObject()
@@ -477,7 +480,6 @@ public class GeoFilterTests extends AbstractSharedClusterTest {
         client().prepareIndex("locations", "location", "p").setCreate(true).setSource("{\"pin\":\"" + geohash.substring(0, geohash.length() - 1) + "\"}").execute().actionGet();
 
         // index neighbors
-        List<String> parentNeighbors = GeoHashUtils.neighbors(geohash.substring(0, geohash.length() - 1));
         for (int i = 0; i < parentNeighbors.size(); i++) {
             client().prepareIndex("locations", "location", "p" + i).setCreate(true).setSource("{\"pin\":\"" + parentNeighbors.get(i) + "\"}").execute().actionGet();
         }
@@ -485,11 +487,12 @@ public class GeoFilterTests extends AbstractSharedClusterTest {
         client().admin().indices().prepareRefresh("locations").execute().actionGet();
 
         // Result of this geohash search should contain the geohash only 
-        SearchResponse results1 = client().prepareSearch("locations").setQuery(QueryBuilders.matchAllQuery()).setFilter("{\"geohash_cell\": {\"field\": \"pin\", \"geohash\": \"" + geohash + "\", \"neighbors\": false}}").execute().actionGet();
+        SearchResponse results1 = client().prepareSearch("locations").setQuery(QueryBuilders.matchAllQuery()).setFilter("{\"geohash_cell\": {\"pin\": \"" + geohash + "\", \"neighbors\": false}}").execute().actionGet();
         assertHitCount(results1, 1);
 
-        SearchResponse results2 = client().prepareSearch("locations").setQuery(QueryBuilders.matchAllQuery()).setFilter("{\"geohash_cell\": {\"field\": \"pin\", \"geohash\": \"" + geohash.substring(0, geohash.length() - 1) + "\", \"neighbors\": true}}").execute().actionGet();
+        SearchResponse results2 = client().prepareSearch("locations").setQuery(QueryBuilders.matchAllQuery()).setFilter("{\"geohash_cell\": {\"pin\": \"" + geohash.substring(0, geohash.length() - 1) + "\", \"neighbors\": true}}").execute().actionGet();
         // Result of the parent query should contain the parent it self, its neighbors, the child and all its neighbors
+        System.out.println(results2);
         assertHitCount(results2, 2 + neighbors.size() + parentNeighbors.size());
     }
 
