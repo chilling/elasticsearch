@@ -19,7 +19,7 @@
 package org.elasticsearch.search.suggest.completion;
 
 import org.apache.lucene.search.suggest.analyzing.XFuzzySuggester;
-import org.elasticsearch.index.mapper.FieldMapper;
+import org.elasticsearch.index.mapper.core.CompletionFieldMapper;
 import org.elasticsearch.search.suggest.Suggester;
 import org.elasticsearch.search.suggest.SuggestionSearchContext;
 
@@ -28,25 +28,25 @@ import org.elasticsearch.search.suggest.SuggestionSearchContext;
  */
 public class CompletionSuggestionContext extends SuggestionSearchContext.SuggestionContext {
 
-    private FieldMapper<?> mapper;
+    private CompletionFieldMapper mapper;
     private int fuzzyEditDistance = XFuzzySuggester.DEFAULT_MAX_EDITS;
     private boolean fuzzyTranspositions = XFuzzySuggester.DEFAULT_TRANSPOSITIONS;
     private int fuzzyMinLength = XFuzzySuggester.DEFAULT_MIN_FUZZY_LENGTH;
     private int fuzzyPrefixLength = XFuzzySuggester.DEFAULT_NON_FUZZY_PREFIX;
-    private boolean fuzzy = false;
-
-    public CompletionSuggestionContext(Suggester suggester) {
-        super(suggester);
-    }
+    private boolean fuzzy = false;    
     
-    public FieldMapper<?> mapper() {
+    public CompletionSuggestionContext(Suggester suggester) {
+      super(suggester);
+    }
+
+    public CompletionFieldMapper mapper() {
         return this.mapper;
     }
     
-    public void mapper(FieldMapper<?> mapper) {
+    public void mapper(CompletionFieldMapper mapper) {
         this.mapper = mapper;
     }
-
+    
     public void setFuzzyEditDistance(int fuzzyEditDistance) {
         this.fuzzyEditDistance = fuzzyEditDistance;
     }

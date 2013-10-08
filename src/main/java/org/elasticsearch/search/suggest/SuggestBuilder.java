@@ -18,15 +18,19 @@
  */
 package org.elasticsearch.search.suggest;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-
 import org.elasticsearch.ElasticSearchIllegalArgumentException;
 import org.elasticsearch.common.xcontent.ToXContent;
 import org.elasticsearch.common.xcontent.XContentBuilder;
+import org.elasticsearch.search.suggest.context.ContextInformation;
+import org.elasticsearch.search.suggest.context.GeoLocationContext;
 import org.elasticsearch.search.suggest.phrase.PhraseSuggestionBuilder;
 import org.elasticsearch.search.suggest.term.TermSuggestionBuilder;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Defines how to perform suggesting. This builders allows a number of global options to be specified and
@@ -123,12 +127,32 @@ public class SuggestBuilder implements ToXContent {
         private String analyzer;
         private Integer size;
         private Integer shardSize;
+        
+        private Map<String, ContextInformation<?>> context = new HashMap<String, ContextInformation<?>>();
 
         public SuggestionBuilder(String name, String suggester) {
             this.name = name;
             this.suggester = suggester;
         }
 
+        @SuppressWarnings("unchecked")
+        public T setContext(ContextInformation<?> context) {
+            this.context.put(context.getType(), context);
+            return (T) this;
+        }
+        
+        @SuppressWarnings("unchecked")
+        public T setGeoLocation(String geohash) {
+            setContext(new GeoLocationContext.GeoLocation(geohash));
+            return (T) this;
+        }
+        
+        @SuppressWarnings("unchecked")
+        public T setGeoLocation(double lat, double lon) {
+            setContext(new GeoLocationContext.GeoLocation(lat, lon));
+            return (T) this;
+        }
+        
         /**
          * Same as in {@link SuggestBuilder#setText(String)}, but in the suggestion scope.
          */
@@ -156,6 +180,14 @@ public class SuggestBuilder implements ToXContent {
             }
             if (shardSize != null) {
                 builder.field("shard_size", shardSize);
+            }
+            if(!this.context.isEmpty()) {
+                builder.startObject("context");
+                for (Map.Entry<String, ContextInformation<?>> context : this.context.entrySet()) {
+                    builder.field(context.getKey());
+                    context.getValue().toXContent(builder, params);
+                }
+                builder.endObject();
             }
             builder = innerToXContent(builder, params);
             builder.endObject();

@@ -117,7 +117,6 @@ public class CompletionSuggestion extends Suggest.Suggestion<CompletionSuggestio
                 }
                 return builder;
             }
-
             @Override
             public void readFrom(StreamInput in) throws IOException {
                 super.readFrom(in);

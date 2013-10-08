@@ -18,12 +18,17 @@
  */
 package org.elasticsearch.search.suggest;
 
-import java.util.LinkedHashMap;
-import java.util.Map;
-
+import com.carrotsearch.hppc.ObjectObjectOpenHashMap;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.util.BytesRef;
 import org.elasticsearch.ElasticSearchIllegalArgumentException;
+import org.elasticsearch.search.suggest.context.CompletionContext;
+import org.elasticsearch.search.suggest.context.ContextInformation;
+import org.elasticsearch.search.suggest.context.GeoLocationContext;
+import org.elasticsearch.search.suggest.context.GeoLocationContext.GeoLocation;
+
+import java.util.LinkedHashMap;
+import java.util.Map;
 /**
  */
 public class SuggestionSearchContext {
@@ -48,6 +53,8 @@ public class SuggestionSearchContext {
         private int shardSize = -1;
         private int shardId;
         private String index;
+        
+        private final ObjectObjectOpenHashMap<String, Object> contextInformations = new ObjectObjectOpenHashMap<String, Object>();
 
         public BytesRef getText() {
             return text;
@@ -59,6 +66,49 @@ public class SuggestionSearchContext {
         
         public SuggestionContext(Suggester suggester) {
             this.suggester = suggester;
+        }
+
+        /**
+         * Test if a specific context information is present
+         * @param name name of the context
+         * @return <code>true</code> if the context information is present
+         */
+        public boolean hasContextInfo(String name) {
+            return contextInformations.containsKey(name);
+        }
+
+        @SuppressWarnings("unchecked")
+        public <E, F extends ContextInformation<E>> F getContextInformation(CompletionContext<F> context) {
+            return (F)contextInformations.get(context.type());
+        }
+        
+        @SuppressWarnings("unchecked")
+        public <E, F extends ContextInformation<E>> F getContextInformation(String name) {
+            return (F)contextInformations.get(name);
+        }
+        
+        /**
+         * add Context information to the context
+         * @param context information to provide
+         */
+        public <E, F extends ContextInformation<E>> void setContextInformation(F context) {
+            contextInformations.put(context.getType(), context);
+        }
+        
+        /**
+         * Add the {@link GeoLocation} to the context  
+         * @param location {@link GeoLocation} to provide
+         */
+        public void setGeoLocation(GeoLocationContext.GeoLocation location) {
+            contextInformations.put(GeoLocationContext.TYPE, location);
+        }
+        
+        /**
+         * Get the geolocation from context informations 
+         * @return {@link GeoLocation} if it is provided by the context
+         */
+        public GeoLocationContext.GeoLocation getGeoLocation() {
+            return (GeoLocationContext.GeoLocation)contextInformations.get(GeoLocationContext.TYPE);
         }
         
         public Suggester<SuggestionContext> getSuggester() {
@@ -119,7 +169,5 @@ public class SuggestionSearchContext {
             return shardId;
         }
     }
-
-   
 
 }
