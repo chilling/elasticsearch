@@ -18,15 +18,20 @@
  */
 package org.elasticsearch.search.suggest;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-
 import org.elasticsearch.ElasticSearchIllegalArgumentException;
 import org.elasticsearch.common.xcontent.ToXContent;
 import org.elasticsearch.common.xcontent.XContentBuilder;
+import org.elasticsearch.search.suggest.context.CategoryContextMapping;
+import org.elasticsearch.search.suggest.context.ContextQuery;
+import org.elasticsearch.search.suggest.context.FieldContextMapping;
+import org.elasticsearch.search.suggest.context.GeoContextMapping;
 import org.elasticsearch.search.suggest.phrase.PhraseSuggestionBuilder;
 import org.elasticsearch.search.suggest.term.TermSuggestionBuilder;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
 
 /**
  * Defines how to perform suggesting. This builders allows a number of global options to be specified and
@@ -123,12 +128,75 @@ public class SuggestBuilder implements ToXContent {
         private String analyzer;
         private Integer size;
         private Integer shardSize;
+        
+        private List<ContextQuery> contextQueries = new ArrayList<ContextQuery>();
 
         public SuggestionBuilder(String name, String suggester) {
             this.name = name;
             this.suggester = suggester;
         }
 
+        @SuppressWarnings("unchecked")
+        private T addContextQuery(ContextQuery ctx) {
+            this.contextQueries.add(ctx);
+            return (T) this;
+        }
+
+        /**
+         * Setup a Geolocation for suggestions. See {@link GeoContextMapping}.
+         * @param lat Latitude of the location
+         * @param lon Longitude of the Location
+         * @return this
+         */
+        public T addGeoLocation(double lat, double lon) {
+            return addContextQuery(GeoContextMapping.query(lat, lon));
+        }
+
+        /**
+         * Setup a Geolocation for suggestions. See {@link GeoContextMapping}.
+         * @param geohash Geohash of the location
+         * @return this
+         */
+        public T addGeoLocation(String geohash) {
+            return addContextQuery(GeoContextMapping.query(geohash));
+        }
+        
+        /**
+         * Setup a Category for suggestions. See {@link CategoryContextMapping}.
+         * @param category name of the category
+         * @return this
+         */
+        public T addCategory(CharSequence...categories) {
+            return addContextQuery(CategoryContextMapping.query(categories));
+        }
+        
+        /**
+         * Setup a Category for suggestions. See {@link CategoryContextMapping}.
+         * @param category name of the category
+         * @return this
+         */
+        public T addCategory(Iterable<? extends CharSequence> categories) {
+            return addContextQuery(CategoryContextMapping.query(categories));
+        }
+        
+        /**
+         * Setup a Context Field for suggestions. See {@link FieldContextMapping}.
+         * @param category name of the category
+         * @return this
+         */
+        public T addContextField(CharSequence...fieldvalues) {
+            return addContextQuery(FieldContextMapping.query(fieldvalues));
+        }
+        
+        /**
+         * Setup a Context Field for suggestions. See {@link FieldContextMapping}.
+         * @param category name of the category
+         * @return this
+         */
+        public T addContextField(Iterable<? extends CharSequence> fieldvalues) {
+            return addContextQuery(FieldContextMapping.query(fieldvalues));
+        }
+        
         /**
          * Same as in {@link SuggestBuilder#setText(String)}, but in the suggestion scope.
          */
@@ -157,6 +225,15 @@ public class SuggestBuilder implements ToXContent {
             if (shardSize != null) {
                 builder.field("shard_size", shardSize);
             }
+
+            Iterator<ContextQuery> iterator = contextQueries.iterator();
+            if(iterator.hasNext()) {
+                builder.startArray("context");
+                do {
+                    builder.value(iterator.next());
+                } while(iterator.hasNext());
+                builder.endArray();
+            }
             builder = innerToXContent(builder, params);
             builder.endObject();
             builder.endObject();
@@ -165,7 +242,7 @@ public class SuggestBuilder implements ToXContent {
 
         protected abstract XContentBuilder innerToXContent(XContentBuilder builder, Params params) throws IOException;
 
-        /**
+        /** 
          * Sets from what field to fetch the candidate suggestions from. This is an
          * required option and needs to be set via this setter or
          * {@link org.elasticsearch.search.suggest.SuggestBuilder.TermSuggestionBuilder#setField(String)}

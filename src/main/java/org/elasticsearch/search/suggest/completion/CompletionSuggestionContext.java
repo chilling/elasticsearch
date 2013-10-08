@@ -19,33 +19,45 @@
 package org.elasticsearch.search.suggest.completion;
 
 import org.apache.lucene.search.suggest.analyzing.XFuzzySuggester;
-import org.elasticsearch.index.mapper.FieldMapper;
+import org.elasticsearch.index.mapper.core.CompletionFieldMapper;
 import org.elasticsearch.search.suggest.Suggester;
 import org.elasticsearch.search.suggest.SuggestionSearchContext;
+import org.elasticsearch.search.suggest.context.ContextQuery;
+
+import java.util.Collections;
 
 /**
  *
  */
 public class CompletionSuggestionContext extends SuggestionSearchContext.SuggestionContext {
 
-    private FieldMapper<?> mapper;
+    private CompletionFieldMapper mapper;
     private int fuzzyEditDistance = XFuzzySuggester.DEFAULT_MAX_EDITS;
     private boolean fuzzyTranspositions = XFuzzySuggester.DEFAULT_TRANSPOSITIONS;
     private int fuzzyMinLength = XFuzzySuggester.DEFAULT_MIN_FUZZY_LENGTH;
     private int fuzzyPrefixLength = XFuzzySuggester.DEFAULT_NON_FUZZY_PREFIX;
     private boolean fuzzy = false;
     private boolean fuzzyUnicodeAware = XFuzzySuggester.DEFAULT_UNICODE_AWARE;
-
+    private Iterable<ContextQuery> contextQueries = Collections.emptyList(); 
+        
     public CompletionSuggestionContext(Suggester suggester) {
-        super(suggester);
+      super(suggester);
     }
-    
-    public FieldMapper<?> mapper() {
+
+    public CompletionFieldMapper mapper() {
         return this.mapper;
     }
-    
-    public void mapper(FieldMapper<?> mapper) {
+
+    public void mapper(CompletionFieldMapper mapper) {
         this.mapper = mapper;
+    }
+
+    public void setContextQuery(Iterable<ContextQuery> queries) {
+        this.contextQueries = queries;
+    }
+
+    public Iterable<ContextQuery> getContextQueries() {
+        return this.contextQueries;
     }
 
     public void setFuzzyEditDistance(int fuzzyEditDistance) {

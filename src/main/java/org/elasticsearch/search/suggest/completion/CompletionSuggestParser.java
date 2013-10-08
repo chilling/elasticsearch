@@ -19,10 +19,15 @@
 package org.elasticsearch.search.suggest.completion;
 
 import org.elasticsearch.ElasticSearchIllegalArgumentException;
+import org.elasticsearch.common.bytes.BytesReference;
+import org.elasticsearch.common.xcontent.XContentBuilder;
+import org.elasticsearch.common.xcontent.XContentFactory;
 import org.elasticsearch.common.xcontent.XContentParser;
 import org.elasticsearch.index.mapper.MapperService;
+import org.elasticsearch.index.mapper.core.CompletionFieldMapper;
 import org.elasticsearch.search.suggest.SuggestContextParser;
 import org.elasticsearch.search.suggest.SuggestionSearchContext;
+import org.elasticsearch.search.suggest.context.ContextQuery;
 
 import java.io.IOException;
 
@@ -44,9 +49,17 @@ public class CompletionSuggestParser implements SuggestContextParser {
         XContentParser.Token token;
         String fieldName = null;
         CompletionSuggestionContext suggestion = new CompletionSuggestionContext(completionSuggester);
+
+        XContentParser contextParser = null;
+
         while ((token = parser.nextToken()) != XContentParser.Token.END_OBJECT) {
             if (token == XContentParser.Token.FIELD_NAME) {
                 fieldName = parser.currentName();
+            } else if("context".equals(fieldName)) {
+                XContentBuilder builder = XContentFactory.contentBuilder(parser.contentType());
+                builder.copyCurrentStructure(parser);
+                BytesReference bytes = builder.bytes();
+                contextParser = parser.contentType().xContent().createParser(bytes);
             } else if (token.isValue()) {
                 if (!parseSuggestContext(parser, mapperService, fieldName, suggestion))  {
                     if (token == XContentParser.Token.VALUE_BOOLEAN && "fuzzy".equals(fieldName)) {
@@ -74,11 +87,14 @@ public class CompletionSuggestParser implements SuggestContextParser {
                     }
                 }
             } else {
-                throw new ElasticSearchIllegalArgumentException("suggester[completion]  doesn't support field [" + fieldName + "]");
+                throw new ElasticSearchIllegalArgumentException("suggester [completion] doesn't support field [" + fieldName + "]");
             }
         }
-        suggestion.mapper(mapperService.smartNameFieldMapper(suggestion.getField()));
 
+        suggestion.mapper((CompletionFieldMapper)mapperService.smartNameFieldMapper(suggestion.getField()));
+        Iterable<ContextQuery> contextQueries = ContextQuery.parseQueries(suggestion.mapper().getContextMapping(), contextParser);
+        suggestion.setContextQuery(contextQueries);
+        
         return suggestion;
     }
 

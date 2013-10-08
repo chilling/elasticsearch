@@ -20,6 +20,7 @@ package org.elasticsearch.common.geo;
 import org.elasticsearch.ElasticSearchIllegalArgumentException;
 
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 
 
@@ -113,13 +114,30 @@ public class GeoHashUtils {
     /**
      * Calculate all neighbors of a given geohash cell.
      *
-     * @param geohash Geohash of the defines cell
+     * @param geohash Geohash of the defined cell
      * @return geohashes of all neighbor cells
      */
     public static List<String> neighbors(String geohash) {
         return addNeighbors(geohash, geohash.length(), new ArrayList<String>(8));
     }
 
+    /**
+     * Create an {@link Iterable} which allows to iterate over the cells that
+     * contain a given geohash
+     *   
+     * @param geohash Geohash of a cell
+     * 
+     * @return {@link Iterable} of path
+     */
+    public static Iterable<String> path(final String geohash) {
+        return new Iterable<String>() {
+            @Override
+            public Iterator<String> iterator() {
+                return new GeohashPathIterator(geohash);
+            }
+        };
+    }
+    
     /**
      * Calculate the geohash of a neighbor of a geohash
      *
@@ -164,7 +182,7 @@ public class GeoHashUtils {
             final int yLimit = ((level % 2) == 0) ? 3 : 7;
 
             // if the defined neighbor has the same parent a the current cell
-            // encode the cell direcly. Otherwise find the cell next to this
+            // encode the cell directly. Otherwise find the cell next to this
             // cell recursively. Since encoding wraps around within a cell
             // it can be encoded here.
             if (nx >= 0 && nx <= xLimit && ny >= 0 && ny < yLimit) {

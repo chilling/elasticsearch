@@ -19,12 +19,12 @@
 
 package org.elasticsearch.common.geo;
 
-import java.io.IOException;
-
 import org.elasticsearch.ElasticSearchParseException;
 import org.elasticsearch.common.xcontent.XContentParser;
 import org.elasticsearch.common.xcontent.XContentParser.Token;
 import org.elasticsearch.index.mapper.geo.GeoPointFieldMapper;
+
+import java.io.IOException;
 
 /**
  *
@@ -39,6 +39,17 @@ public class GeoPoint {
     private double lon;
 
     public GeoPoint() {
+    }
+
+    /**
+     * Create a new Geopointform a string. This String must either be a geohash
+     * or a lat-lon tuple.
+     *   
+     * @param value String to create the point from
+     */
+    public GeoPoint(String value) {
+        this();
+        this.resetFromString(value);
     }
 
     public GeoPoint(double lat, double lon) {
